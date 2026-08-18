@@ -319,12 +319,27 @@ class TicketController extends Controller
         $attachments = [];
         /** @var array<int, UploadedFile> $uploadedFiles */
         $uploadedFiles = $request->file('attachments', []);
+        
+        if ($uploadedFiles) {
+            // Ensure ticket directory has correct permissions
+            $ticketDir = storage_path("app/private/tickets/{$ticket->id}");
+            if (! is_dir($ticketDir)) {
+                @mkdir($ticketDir, 0775, true);
+            }
+            @chmod($ticketDir, 0775);
+        }
+        
         foreach ($uploadedFiles as $file) {
             $extension = $file->getClientOriginalExtension();
             $safeExtension = $extension ? ('.' . strtolower($extension)) : '';
             $fileName = Str::lower(Str::random(16)) . $safeExtension;
 
             $path = $file->storeAs("tickets/{$ticket->id}", $fileName);
+            if ($path) {
+                // Ensure file has correct permissions
+                $filePath = storage_path("app/private/{$path}");
+                @chmod($filePath, 0664);
+            }
             $attachments[] = [
                 'path' => $path,
                 'original_name' => $file->getClientOriginalName(),
@@ -771,12 +786,27 @@ class TicketController extends Controller
         $attachments = [];
         /** @var array<int, UploadedFile> $uploadedFiles */
         $uploadedFiles = $request->file('attachments', []);
+        
+        if ($uploadedFiles) {
+            // Ensure comment directory has correct permissions
+            $commentsDir = storage_path("app/private/tickets/{$ticket->id}/comments");
+            if (! is_dir($commentsDir)) {
+                @mkdir($commentsDir, 0775, true);
+            }
+            @chmod($commentsDir, 0775);
+        }
+        
         foreach ($uploadedFiles as $file) {
             $extension = $file->getClientOriginalExtension();
             $safeExtension = $extension ? ('.' . strtolower($extension)) : '';
             $fileName = Str::lower(Str::random(16)) . $safeExtension;
 
             $path = $file->storeAs("tickets/{$ticket->id}/comments", $fileName);
+            if ($path) {
+                // Ensure file has correct permissions
+                $filePath = storage_path("app/private/{$path}");
+                @chmod($filePath, 0664);
+            }
             $attachments[] = [
                 'path' => $path,
                 'original_name' => $file->getClientOriginalName(),

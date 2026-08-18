@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\PasswordChangeController;
 use App\Http\Controllers\ProfileController;
+use App\Http\Controllers\ReportController;
 use App\Http\Controllers\TicketController;
 use App\Http\Controllers\UserManagementController;
 use App\Models\Project;
@@ -159,12 +160,23 @@ Route::get('/dashboard', function () {
 })->middleware(['auth', 'verified'])->name('dashboard');
 
 Route::middleware('auth')->group(function () {
+    Route::get('/debug-db', function () {
+        $connection = config('database.default');
+        return [
+            'connection' => $connection,
+            'host' => config("database.connections.$connection.host"),
+            'database' => config("database.connections.$connection.database"),
+        ];
+    });
+
     Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
     Route::patch('/profile', [ProfileController::class, 'update'])->name('profile.update');
+    Route::post('/profile/avatar', [ProfileController::class, 'uploadAvatar'])->name('profile.avatar');
     Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
 
     Route::get('/change-password', [\App\Http\Controllers\PasswordChangeController::class, 'show'])->name('password.change');
-    Route::post('/change-password', [\App\Http\Controllers\PasswordChangeController::class, 'update'])->name('password.update');
+    Route::put('/change-password', [\App\Http\Controllers\PasswordChangeController::class, 'update'])->name('password.change.update');
+    Route::post('/change-password', [\App\Http\Controllers\PasswordChangeController::class, 'update']);
 
     Route::get('/tickets', [TicketController::class, 'index'])->name('tickets.index');
     Route::get('/tickets/create', [TicketController::class, 'create'])->name('tickets.create');
@@ -217,6 +229,11 @@ Route::middleware('auth')->group(function () {
     Route::get('/users/{user}/edit', [UserManagementController::class, 'edit'])->name('users.edit');
     Route::patch('/users/{user}', [UserManagementController::class, 'update'])->name('users.update');
     Route::patch('/users/{user}/toggle-active', [UserManagementController::class, 'toggleActive'])->name('users.toggleActive');
+
+    Route::get('/reports/unit', [ReportController::class, 'unitReport'])->name('reports.unit');
+    Route::get('/reports/unit/export', [ReportController::class, 'exportUnitReport'])->name('reports.unit.export');
+    Route::get('/reports/assignee', [ReportController::class, 'assigneeReport'])->name('reports.assignee');
+    Route::get('/reports/assignee/export', [ReportController::class, 'exportAssigneeReport'])->name('reports.assignee.export');
 });
 
 require __DIR__.'/auth.php';

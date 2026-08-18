@@ -48,7 +48,6 @@ export default function UsersCreate({
     const { data, setData, post, processing, errors } = useForm({
         name: '',
         username: '',
-        employee_id: '',
         email: '',
         unit_id: unit?.id ? String(unit.id) : '',
         role: isSupervisor ? 'member' : 'member',
@@ -186,44 +185,22 @@ export default function UsersCreate({
                                 </div>
                             </div>
 
-                            <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
-                                <div>
-                                    <InputLabel
-                                        htmlFor="employee_id"
-                                        value="NIP / ID Karyawan"
-                                    />
-                                    <TextInput
-                                        id="employee_id"
-                                        className="mt-2 block w-full rounded-xl border-slate-200 bg-slate-50/50 px-4 py-3 text-slate-900 placeholder-slate-400 shadow-sm transition-all duration-200 focus:border-teal-500 focus:bg-white focus:ring-2 focus:ring-teal-500/20"
-                                        value={data.employee_id}
-                                        onChange={(e) =>
-                                            setData('employee_id', e.target.value)
-                                        }
-                                        placeholder="Opsional"
-                                    />
-                                    <InputError
-                                        message={errors.employee_id}
-                                        className="mt-2"
-                                    />
-                                </div>
-
-                                <div>
-                                    <InputLabel htmlFor="email" value="Email" />
-                                    <TextInput
-                                        id="email"
-                                        type="email"
-                                        className="mt-2 block w-full rounded-xl border-slate-200 bg-slate-50/50 px-4 py-3 text-slate-900 placeholder-slate-400 shadow-sm transition-all duration-200 focus:border-teal-500 focus:bg-white focus:ring-2 focus:ring-teal-500/20"
-                                        value={data.email}
-                                        onChange={(e) =>
-                                            setData('email', e.target.value)
-                                        }
-                                        placeholder="email@example.com (opsional)"
-                                    />
-                                    <InputError
-                                        message={errors.email}
-                                        className="mt-2"
-                                    />
-                                </div>
+                            <div>
+                                <InputLabel htmlFor="email" value="Email" />
+                                <TextInput
+                                    id="email"
+                                    type="email"
+                                    className="mt-2 block w-full rounded-xl border-slate-200 bg-slate-50/50 px-4 py-3 text-slate-900 placeholder-slate-400 shadow-sm transition-all duration-200 focus:border-teal-500 focus:bg-white focus:ring-2 focus:ring-teal-500/20"
+                                    value={data.email}
+                                    onChange={(e) =>
+                                        setData('email', e.target.value)
+                                    }
+                                    placeholder="email@example.com (opsional)"
+                                />
+                                <InputError
+                                    message={errors.email}
+                                    className="mt-2"
+                                />
                             </div>
 
                             {isAdminUnit && (

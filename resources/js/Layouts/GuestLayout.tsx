@@ -1,26 +1,31 @@
 import ApplicationLogo from '@/Components/ApplicationLogo';
-import { Link } from '@inertiajs/react';
 import { PropsWithChildren } from 'react';
 
 export default function Guest({ children }: PropsWithChildren) {
     return (
-        <div 
-            className="flex min-h-screen flex-col items-center justify-start pt-80"
-            style={{
-                backgroundImage: 'url(/images/gedung-oetomo.jpg)',
-                backgroundSize: 'cover',
-                backgroundPosition: 'center',
-                backgroundRepeat: 'no-repeat'
-            }}
-        >
-            <div className="absolute inset-0 bg-slate-900/30"></div>
-            <div className="relative z-10 flex flex-col items-center">
-                <div className="w-full overflow-hidden bg-white/95 backdrop-blur-md px-6 py-6 shadow-2xl sm:max-w-md sm:rounded-2xl">
-                    {children}
+        <div className="min-h-screen bg-gray-700 text-slate-900">
+            <div className="grid min-h-screen grid-cols-1 md:grid-cols-2">
+                <div className="relative hidden md:block">
+                    <img
+                        src="/images/gedung-oetomo.jpg"
+                        alt="Oetomo Hospital"
+                        className="absolute inset-0 h-full w-full object-cover"
+                    />
                 </div>
-                <footer className="mt-6 text-center text-xs text-white">
-                    2026 @ Informasi Teknologi Oetomo
-                </footer>
+
+                <div className="flex items-center justify-center px-6 py-12 sm:px-10">
+                    <div className="w-full max-w-xl">
+                        <div className="flex justify-center mb-10">
+                            <ApplicationLogo className="h-20 w-auto" />
+                        </div>
+                        <div className="overflow-hidden rounded-[2rem] border border-slate-200/80 bg-white p-8 shadow-2xl shadow-slate-950/10">
+                            {children}
+                        </div>
+                        <footer className="mt-6 text-center text-sm text-slate-500">
+                            2026 @ (DK) Teknologi Informasi Oetomo
+                        </footer>
+                    </div>
+                </div>
             </div>
         </div>
     );

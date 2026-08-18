@@ -37,11 +37,16 @@ class HandleInertiaRequests extends Middleware
     {
         $user = $request->user();
 
+        $defaultConnection = config('database.default');
+
         return [
             ...parent::share($request),
             'auth' => [
                 'user' => $user,
             ],
+            'db_host' => config("database.connections.$defaultConnection.host"),
+            'db_port' => config("database.connections.$defaultConnection.port"),
+            'db_name' => config("database.connections.$defaultConnection.database"),
             'flash' => [
                 'success' => fn () => $request->session()->get('success'),
                 'error' => fn () => $request->session()->get('error'),

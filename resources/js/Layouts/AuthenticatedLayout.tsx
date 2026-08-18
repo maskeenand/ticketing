@@ -12,6 +12,9 @@ export default function Authenticated({
 }: PropsWithChildren<{ header?: ReactNode }>) {
     const page = usePage();
     const user = page.props.auth.user;
+    const dbHost = page.props.db_host ?? '100.20.30.254';
+    const dbPort = page.props.db_port ?? '5432';
+    const dbName = page.props.db_name ?? 'helpdesk_dev';
     const notifications = page.props.notifications;
     const unreadCount = notifications?.unread_count ?? 0;
     const notificationItems = notifications?.items ?? [];
@@ -386,6 +389,45 @@ export default function Authenticated({
                                     }
                                 />
                             )}
+
+                            {canManageUsers && (
+                                <div>
+                                    <div className={`flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-semibold transition-all duration-200 ${route().current('reports.*') ? 'bg-gradient-to-r from-teal-500 to-cyan-600 text-white shadow-lg' : 'text-slate-600 hover:bg-slate-100'}`}>
+                                        <svg
+                                            xmlns="http://www.w3.org/2000/svg"
+                                            viewBox="0 0 24 24"
+                                            fill="none"
+                                            stroke="currentColor"
+                                            strokeWidth="2"
+                                            strokeLinecap="round"
+                                            strokeLinejoin="round"
+                                            className="h-6 w-6 shrink-0"
+                                        >
+                                            <polyline points="3 3 7 3 7 7 3 7 3 3" />
+                                            <polyline points="14 3 18 3 18 7 14 7 14 3" />
+                                            <polyline points="14 13 18 13 18 17 14 17 14 13" />
+                                            <polyline points="3 13 7 13 7 17 3 17 3 13" />
+                                        </svg>
+                                        {!sidebarCollapsed && <span>Laporan</span>}
+                                    </div>
+                                    {!sidebarCollapsed && (
+                                        <div className="ml-9 mt-1 flex flex-col gap-0.5">
+                                            <a
+                                                href={route('reports.unit')}
+                                                className={`rounded-lg px-3 py-1.5 text-sm transition-all duration-150 ${route().current('reports.unit') ? 'font-semibold text-teal-600' : 'text-slate-500 hover:text-slate-800 hover:bg-slate-100'}`}
+                                            >
+                                                Per Unit
+                                            </a>
+                                            <a
+                                                href={route('reports.assignee')}
+                                                className={`rounded-lg px-3 py-1.5 text-sm transition-all duration-150 ${route().current('reports.assignee') ? 'font-semibold text-teal-600' : 'text-slate-500 hover:text-slate-800 hover:bg-slate-100'}`}
+                                            >
+                                                Per Petugas
+                                            </a>
+                                        </div>
+                                    )}
+                                </div>
+                            )}
                         </div>
                     </div>
 
@@ -613,10 +655,12 @@ export default function Authenticated({
                                                     type="button"
                                                     className="inline-flex items-center gap-3 rounded-2xl border border-slate-200 bg-gradient-to-r from-white to-slate-50 px-4 py-2.5 text-sm font-semibold text-slate-700 transition-all duration-300 hover:from-slate-50 hover:to-slate-100 hover:border-slate-300 hover:shadow-md hover:scale-[1.02] focus:outline-none"
                                                 >
-                                                    <span className="inline-flex h-10 w-10 items-center justify-center rounded-full bg-gradient-to-br from-teal-500 to-cyan-600 text-sm font-bold text-white shadow-xl shadow-teal-500/40">
-                                                        {user.name
-                                                            .slice(0, 1)
-                                                            .toUpperCase()}
+                                                    <span className="inline-flex h-10 w-10 items-center justify-center rounded-full bg-gradient-to-br from-teal-500 to-cyan-600 text-sm font-bold text-white shadow-xl shadow-teal-500/40 overflow-hidden">
+                                                        {user.avatar ? (
+                                                            <img src={`/storage/${user.avatar}`} alt={user.name} className="h-full w-full object-cover" />
+                                                        ) : (
+                                                            user.name.slice(0, 1).toUpperCase()
+                                                        )}
                                                     </span>
                                                     <span className="hidden sm:inline">
                                                         {user.name}
@@ -638,24 +682,78 @@ export default function Authenticated({
                                             </span>
                                         </Dropdown.Trigger>
 
-                                        <Dropdown.Content>
+                                        <Dropdown.Content width="72" contentClasses="bg-white py-0">
+                                            {/* Header: Selamat Datang */}
+                                            <div className="border-b border-slate-200 px-4 py-3 text-center">
+                                                <p className="text-sm font-semibold text-slate-700">
+                                                    Selamat Datang {user.name}.
+                                                </p>
+                                            </div>
+
+                                            {/* DB Info */}
+                                            <div className="border-b border-slate-100 px-4 py-3">
+                                                <div className="flex items-center gap-3">
+                                                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" className="h-5 w-5 shrink-0 text-slate-400">
+                                                        <ellipse cx="12" cy="5" rx="9" ry="3"/>
+                                                        <path d="M3 5v14c0 1.66 4.03 3 9 3s9-1.34 9-3V5"/>
+                                                        <path d="M3 12c0 1.66 4.03 3 9 3s9-1.34 9-3"/>
+                                                    </svg>
+                                                    <span className="text-sm text-slate-600">
+                                                        {dbHost} | {dbPort} | {dbName}
+                                                    </span>
+                                                </div>
+                                            </div>
+
+                                            {/* Profile */}
                                             <Dropdown.Link href={route('profile.edit')}>
-                                                Profile
+                                                <div className="flex items-center gap-3">
+                                                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" className="h-5 w-5 shrink-0 text-slate-400">
+                                                        <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
+                                                        <circle cx="12" cy="7" r="4"/>
+                                                    </svg>
+                                                    <span>Profile</span>
+                                                </div>
                                             </Dropdown.Link>
-                                            <Dropdown.Link
-                                                href={route('profile.edit', {
-                                                    section: 'password',
-                                                })}
-                                            >
-                                                Ganti Password
+
+                                            {/* Ubah Password */}
+                                            <Dropdown.Link href={route('profile.edit', { section: 'password' })}>
+                                                <div className="flex items-center gap-3">
+                                                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" className="h-5 w-5 shrink-0 text-slate-400">
+                                                        <rect x="3" y="11" width="18" height="11" rx="2" ry="2"/>
+                                                        <path d="M7 11V7a5 5 0 0 1 10 0v4"/>
+                                                    </svg>
+                                                    <span>Ubah Password</span>
+                                                </div>
                                             </Dropdown.Link>
-                                            <Dropdown.Link
-                                                href={route('logout')}
-                                                method="post"
-                                                as="button"
-                                            >
-                                                Log Out
-                                            </Dropdown.Link>
+
+                                            {/* Version */}
+                                            <div className="border-t border-slate-100 px-4 py-3">
+                                                <div className="flex items-center gap-3">
+                                                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" className="h-5 w-5 shrink-0 text-slate-400">
+                                                        <path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z"/>
+                                                        <line x1="7" y1="7" x2="7.01" y2="7"/>
+                                                    </svg>
+                                                    <span className="text-sm text-slate-600">Production Version v1.0.0</span>
+                                                </div>
+                                            </div>
+
+                                            {/* Logout */}
+                                            <div className="border-t border-slate-200">
+                                                <Dropdown.Link
+                                                    href={route('logout')}
+                                                    method="post"
+                                                    as="button"
+                                                >
+                                                    <div className="flex items-center gap-3">
+                                                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" className="h-5 w-5 shrink-0 text-slate-400">
+                                                            <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/>
+                                                            <polyline points="16 17 21 12 16 7"/>
+                                                            <line x1="21" y1="12" x2="9" y2="12"/>
+                                                        </svg>
+                                                        <span>Logout</span>
+                                                    </div>
+                                                </Dropdown.Link>
+                                            </div>
                                         </Dropdown.Content>
                                     </Dropdown>
                                 </div>

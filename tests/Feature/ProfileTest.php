@@ -18,7 +18,10 @@ class ProfileTest extends TestCase
             ->actingAs($user)
             ->get('/profile');
 
-        $response->assertOk();
+        $response
+            ->assertOk()
+            ->assertSee(config('database.connections.pgsql.host'))
+            ->assertSee(config('database.connections.pgsql.database'));
     }
 
     public function test_profile_information_can_be_updated(): void

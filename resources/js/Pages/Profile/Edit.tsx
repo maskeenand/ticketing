@@ -7,7 +7,10 @@ import UpdateProfileInformationForm from './Partials/UpdateProfileInformationFor
 export default function Edit({
     mustVerifyEmail,
     status,
-}: PageProps<{ mustVerifyEmail: boolean; status?: string }>) {
+}: PageProps<{
+    mustVerifyEmail: boolean;
+    status?: string;
+}>) {
     const page = usePage();
     const params = new URLSearchParams(page.url.split('?')[1] ?? '');
     const section = params.get('section');

@@ -32,6 +32,7 @@ class User extends Authenticatable
         'is_active',
         'supervisor_id',
         'password_changed_at',
+        'avatar',
     ];
 
     /**

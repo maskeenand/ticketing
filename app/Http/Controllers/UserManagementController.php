@@ -233,6 +233,7 @@ class UserManagementController extends Controller
         }
 
         $isSupervisor = $authUser->role === 'supervisor';
+        $isAdminUnit = $authUser->role === 'admin';
 
         // If supervisor, only allow editing their subordinates and team members
         if ($isSupervisor) {

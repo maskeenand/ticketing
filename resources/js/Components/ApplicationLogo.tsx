@@ -12,7 +12,7 @@ export default function ApplicationLogo({
     if (!useFallback) {
         return (
             <img
-                src="/logo-oetomo2.png"
+                src="/logo-oetomo.png"
                 alt="Helpdesk Oetomo Hospital"
                 className={
                     variant === 'icon'
