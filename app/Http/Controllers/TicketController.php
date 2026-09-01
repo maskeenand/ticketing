@@ -53,6 +53,8 @@ class TicketController extends Controller
         $isUnitAdmin = $user !== null && $user->role === 'admin';
         $isSupervisor = $user !== null && $user->role === 'supervisor';
 
+        $isStaffUser = $staffTeam !== null || $isSupervisor;
+
         if ($viewMode === '') {
             $viewMode = ($staffTeam || $isUnitAdmin || $isSupervisor) ? 'client' : 'personal';
             $filters['view_mode'] = $viewMode;
@@ -61,7 +63,7 @@ class TicketController extends Controller
         $effectiveStaffTeam = $viewMode === 'client' ? $staffTeam : null;
         $effectiveIsUnitAdmin = $viewMode === 'client' ? $isUnitAdmin : false;
 
-        if ($effectiveStaffTeam || $effectiveIsUnitAdmin || ($isSupervisor && $viewMode === 'client')) {
+        if ($effectiveStaffTeam || $effectiveIsUnitAdmin || ($isStaffUser && $viewMode === 'client')) {
             $tab = 'list';
             $filters['tab'] = $tab;
         }
@@ -70,8 +72,14 @@ class TicketController extends Controller
             ->with(['project:id,name', 'requester:id,name', 'creator:id,name', 'assignee:id,name', 'latestComment.user:id,name'])
             ->orderByDesc('created_at');
 
-        if (! $effectiveStaffTeam && ! $effectiveIsUnitAdmin && ! ($isSupervisor && $viewMode === 'client')) {
-            if ($user !== null && $user->unit_id) {
+        $isStaffUser = $staffTeam !== null || $isSupervisor; // semua staf (it/ipsrs/team/supervisor)
+
+        if (! $effectiveStaffTeam && ! $effectiveIsUnitAdmin && ! ($isStaffUser && $viewMode === 'client')) {
+            if ($isStaffUser && $viewMode === 'personal') {
+                // Staf di personal mode: hanya tiket yang dia buat/request sendiri
+                $filters['raised_by'] = $user->id;
+                $filters['project_id'] = null;
+            } elseif ($user !== null && $user->unit_id) {
                 $filters['project_id'] = (int) $user->unit_id;
                 $filters['raised_by'] = null;
             } elseif ($user !== null) {
@@ -202,38 +210,19 @@ class TicketController extends Controller
         $availableAssignees = collect();
         if ($canEdit) {
             if ($staffTeam) {
-                $availableAssignees = User::query()
-                    ->where(function ($q) use ($staffTeam) {
-                        if ($staffTeam === 'IT') {
-                            $q->where('role', 'it')->orWhere('team', 'IT');
-                        } elseif ($staffTeam === 'IPSRS') {
-                            $q->where('role', 'ipsrs')->orWhere('team', 'IPSRS');
-                        }
-                    })
-                    ->where('is_active', true)
-                    ->orderBy('name')
-                    ->get(['id', 'name']);
+                $availableAssignees = $this->getAssigneesForCategory($staffTeam);
             } elseif ($isSupervisor) {
                 // Supervisor bisa memilih dari anggota timnya dan subordinatesnya
                 $supervisorTeam = $this->getStaffTeam($user);
-                $availableAssignees = User::query()
-                    ->where(function ($q) use ($supervisorTeam, $user) {
-                        if ($supervisorTeam) {
-                            if ($supervisorTeam === 'IT') {
-                                $q->orWhere('role', 'it')->orWhere('team', 'IT');
-                            } elseif ($supervisorTeam === 'IPSRS') {
-                                $q->orWhere('role', 'ipsrs')->orWhere('team', 'IPSRS');
-                            }
-                        }
-                        // Tambahkan subordinates dari supervisor
-                        $subordinateIds = $user->subordinates()->pluck('id')->toArray();
-                        if (!empty($subordinateIds)) {
-                            $q->orWhereIn('id', $subordinateIds);
-                        }
-                    })
-                    ->where('is_active', true)
-                    ->orderBy('name')
-                    ->get(['id', 'name']);
+                $baseAssignees = $supervisorTeam
+                    ? $this->getAssigneesForCategory($supervisorTeam)
+                    : collect();
+                // Tambahkan subordinates jika belum ada
+                $subordinateIds = $user->subordinates()->pluck('id')->toArray();
+                $extraSubordinates = !empty($subordinateIds)
+                    ? User::query()->whereIn('id', $subordinateIds)->where('is_active', true)->orderBy('name')->get(['id', 'name'])
+                    : collect();
+                $availableAssignees = $baseAssignees->merge($extraSubordinates)->unique('id')->sortBy('name')->values();
             }
         }
 
@@ -392,8 +381,9 @@ class TicketController extends Controller
             })->afterResponse();
         }
 
+        $isStaff = $this->getStaffTeam($user) !== null || ($user !== null && $user->role === 'supervisor');
         return redirect()
-            ->route('tickets.index', ['view_mode' => 'client'])
+            ->route('tickets.index', ['view_mode' => $isStaff ? 'personal' : 'client'])
             ->with('success', "Ticket {$ticket->code} berhasil dibuat.");
     }
 
@@ -606,24 +596,15 @@ class TicketController extends Controller
         $availableAssignees = collect();
         if ($canEdit) {
             if ($ticket->category) {
-                $availableAssignees = User::query()
-                    ->where(function ($q) use ($ticket, $isSupervisor, $user) {
-                        if ($ticket->category === 'IT') {
-                            $q->orWhere('role', 'it')->orWhere('team', 'IT');
-                        } elseif ($ticket->category === 'IPSRS') {
-                            $q->orWhere('role', 'ipsrs')->orWhere('team', 'IPSRS');
-                        }
-                        // Jika supervisor, tambahkan subordinatesnya
-                        if ($isSupervisor) {
-                            $subordinateIds = $user->subordinates()->pluck('id')->toArray();
-                            if (!empty($subordinateIds)) {
-                                $q->orWhereIn('id', $subordinateIds);
-                            }
-                        }
-                    })
-                    ->where('is_active', true)
-                    ->orderBy('name')
-                    ->get(['id', 'name']);
+                $availableAssignees = $this->getAssigneesForCategory($ticket->category);
+                // Jika supervisor, tambahkan subordinates yang belum masuk
+                if ($isSupervisor) {
+                    $subordinateIds = $user->subordinates()->pluck('id')->toArray();
+                    if (!empty($subordinateIds)) {
+                        $extra = User::query()->whereIn('id', $subordinateIds)->where('is_active', true)->orderBy('name')->get(['id', 'name']);
+                        $availableAssignees = $availableAssignees->merge($extra)->unique('id')->sortBy('name')->values();
+                    }
+                }
             }
         }
 
@@ -929,8 +910,10 @@ class TicketController extends Controller
             });
         }
 
-        if ($user && $user->role === 'supervisor') {
-            // Supervisor bisa melihat ticket dari timnya atau ticket yang berkaitan dengan subordinatesnya
+        $viewMode = $filters['view_mode'] ?? 'client';
+
+        if ($user && $user->role === 'supervisor' && $viewMode === 'client') {
+            // Supervisor (client mode): tiket dari timnya ATAU tiket subordinat
             $supervisorTeam = $this->getStaffTeam($user);
             $subordinateIds = $user->subordinates()->pluck('id')->toArray();
             $query->where(function (Builder $sub) use ($supervisorTeam, $subordinateIds) {
@@ -943,8 +926,11 @@ class TicketController extends Controller
                         ->orWhereIn('assignee_id', $subordinateIds);
                 }
             });
-        } elseif ($staffTeam) {
+        } elseif ($staffTeam && $viewMode === 'client') {
+            // Staf IT/IPSRS/team (client mode): hanya tiket kategorinya saja
             $query->where('category', $staffTeam);
+        } elseif ($staffTeam && $viewMode === 'personal') {
+            // Personal mode: tidak filter category — raised_by dari index() yang bekerja
         } elseif ($filters['category'] ?? null) {
             $query->where('category', $filters['category']);
         }
@@ -976,6 +962,33 @@ class TicketController extends Controller
         if ($applyStatus && ($filters['status'] ?? null)) {
             $query->where('status', $filters['status']);
         }
+    }
+
+    /**
+     * Get users eligible as assignees for a given ticket category.
+     * Includes: staff with matching role/team, AND supervisors of that unit.
+     */
+    private function getAssigneesForCategory(string $category): \Illuminate\Database\Eloquent\Collection
+    {
+        return User::query()
+            ->where('is_active', true)
+            ->where(function ($q) use ($category) {
+                if ($category === 'IT') {
+                    $q->where('role', 'it')
+                      ->orWhere('team', 'IT')
+                      ->orWhere(fn ($s) => $s->where('role', 'supervisor')
+                          ->where(fn ($t) => $t->where('team', 'IT')
+                              ->orWhereHas('unit', fn ($u) => $u->where('name', 'IT'))));
+                } elseif ($category === 'IPSRS') {
+                    $q->where('role', 'ipsrs')
+                      ->orWhere('team', 'IPSRS')
+                      ->orWhere(fn ($s) => $s->where('role', 'supervisor')
+                          ->where(fn ($t) => $t->where('team', 'IPSRS')
+                              ->orWhereHas('unit', fn ($u) => $u->where('name', 'IPSRS'))));
+                }
+            })
+            ->orderBy('name')
+            ->get(['id', 'name']);
     }
 
     private function generateTicketCode(string $category): string
@@ -1026,7 +1039,20 @@ class TicketController extends Controller
         }
 
         if ($user->role === 'supervisor') {
-            return in_array($user->team, ['IT', 'IPSRS'], true) ? $user->team : null;
+            if (in_array($user->team, ['IT', 'IPSRS'], true)) {
+                return $user->team;
+            }
+            // Fallback: check unit name (e.g. supervisor with unit_id pointing to IT/IPSRS project)
+            if ($user->unit_id) {
+                $unitName = \App\Models\Project::find($user->unit_id)?->name;
+                if ($unitName === 'IT') {
+                    return 'IT';
+                }
+                if ($unitName === 'IPSRS') {
+                    return 'IPSRS';
+                }
+            }
+            return null;
         }
 
         if (in_array($user->team, ['IT', 'IPSRS'], true)) {
@@ -1040,22 +1066,33 @@ class TicketController extends Controller
     {
         $staffTeam = $this->getStaffTeam($user);
         if ($staffTeam) {
-            if ($ticket->category !== $staffTeam) {
-                abort(403);
+            // Staf bisa akses tiket kategorinya ATAU tiket yang mereka buat/request sendiri
+            if ($ticket->category === $staffTeam) {
+                return;
             }
-
-            return;
+            if ((int) $ticket->requester_id === (int) $user->id || (int) $ticket->creator_id === (int) $user->id) {
+                return;
+            }
+            abort(403);
         }
 
         if ($user->role === 'supervisor') {
-            // Supervisor bisa melihat ticket dari timnya atau ticket yang berkaitan dengan subordinatesnya
+            // Supervisor bisa lihat tiket dari timnya, tiket subordinat, atau tiket yang dia buat sendiri
             $supervisorTeam = $this->getStaffTeam($user);
             if ($supervisorTeam && $ticket->category === $supervisorTeam) {
                 return;
             }
-            // Cek apakah ticket dibuat oleh subordinatesnya atau ditugaskan ke subordinatesnya
+            // Tiket yang dibuat/diminta sendiri
+            if ((int) $ticket->requester_id === (int) $user->id || (int) $ticket->creator_id === (int) $user->id) {
+                return;
+            }
+            // Tiket dari subordinat
             $subordinateIds = $user->subordinates()->pluck('id')->toArray();
-            if (in_array($ticket->requester_id, $subordinateIds) || in_array($ticket->creator_id, $subordinateIds) || in_array($ticket->assignee_id, $subordinateIds)) {
+            if (
+                in_array((int) $ticket->requester_id, $subordinateIds, true) ||
+                in_array((int) $ticket->creator_id, $subordinateIds, true) ||
+                in_array((int) $ticket->assignee_id, $subordinateIds, true)
+            ) {
                 return;
             }
             abort(403);

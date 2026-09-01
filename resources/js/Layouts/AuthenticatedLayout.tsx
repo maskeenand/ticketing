@@ -79,7 +79,7 @@ export default function Authenticated({
     const viewModeParam = urlParams.get('view_mode');
     
     // Default to 'personal' if no view_mode is set, unless the user is an admin/staff where default is 'client'
-    const isClientDefault = user.role === 'admin' || user.role === 'it' || user.role === 'ipsrs' || Boolean(user.team);
+    const isClientDefault = user.role === 'admin' || user.role === 'it' || user.role === 'ipsrs' || user.role === 'supervisor' || Boolean(user.team);
     const currentViewMode = viewModeParam || (isClientDefault ? 'client' : 'personal');
     
     const myTicketsActive = isTicketsRoute && currentViewMode === 'personal';
@@ -88,7 +88,10 @@ export default function Authenticated({
     const ticketsMenuParentActive = myTicketsActive || route().current('tickets.create');
     const [ticketMenuOpen, setTicketMenuOpen] = useState(ticketsMenuParentActive);
     const canManageUsers = user.role === 'admin' || user.role === 'supervisor';
-    const showTicketMenu = user.role !== 'member';
+    const showTicketMenu = true; // semua user bisa create ticket
+    const isSupervisor = user.role === 'supervisor';
+    // Staf = semua yang punya akses "client mode" (it, ipsrs, team IT/IPSRS, supervisor)
+    const isStaffRole = user.role === 'it' || user.role === 'ipsrs' || user.role === 'supervisor' || Boolean(user.team);
 
     const sidebarWidthClass = sidebarCollapsed ? 'w-20' : 'w-72';
 
@@ -246,32 +249,35 @@ export default function Authenticated({
                                 }
                             />
 
-                            {/* <SidebarItem
-                                href={route('tickets.index', { view_mode: 'personal' })}
-                                active={myTicketsActive}
-                                label="My Tickets"
-                                icon={
-                                    <svg
-                                        xmlns="http://www.w3.org/2000/svg"
-                                        viewBox="0 0 24 24"
-                                        fill="none"
-                                        stroke="currentColor"
-                                        strokeWidth="2"
-                                        className="h-5 w-5"
-                                    >
-                                        <path
-                                            strokeLinecap="round"
-                                            strokeLinejoin="round"
-                                            d="M7.5 4.5h9A2.25 2.25 0 0118.75 6.75v12A2.25 2.25 0 0116.5 21h-9A2.25 2.25 0 015.25 18.75v-12A2.25 2.25 0 017.5 4.5z"
-                                        />
-                                        <path
-                                            strokeLinecap="round"
-                                            strokeLinejoin="round"
-                                            d="M8.25 9h7.5M8.25 12h7.5M8.25 15h4.5"
-                                        />
-                                    </svg>
-                                }
-                            /> */}
+                            {/* My Tickets — untuk semua staf (dual-role: personal + client) */}
+                            {isStaffRole && (
+                                <SidebarItem
+                                    href={route('tickets.index', { view_mode: 'personal' })}
+                                    active={myTicketsActive}
+                                    label="My Tickets"
+                                    icon={
+                                        <svg
+                                            xmlns="http://www.w3.org/2000/svg"
+                                            viewBox="0 0 24 24"
+                                            fill="none"
+                                            stroke="currentColor"
+                                            strokeWidth="2"
+                                            className="h-5 w-5"
+                                        >
+                                            <path
+                                                strokeLinecap="round"
+                                                strokeLinejoin="round"
+                                                d="M7.5 4.5h9A2.25 2.25 0 0118.75 6.75v12A2.25 2.25 0 0116.5 21h-9A2.25 2.25 0 015.25 18.75v-12A2.25 2.25 0 017.5 4.5z"
+                                            />
+                                            <path
+                                                strokeLinecap="round"
+                                                strokeLinejoin="round"
+                                                d="M8.25 9h7.5M8.25 12h7.5M8.25 15h4.5"
+                                            />
+                                        </svg>
+                                    }
+                                />
+                            )}
 
                             {showTicketMenu && (
                                 <>

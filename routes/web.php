@@ -33,6 +33,12 @@ Route::get('/', function () {
         $staffTeam = 'IPSRS';
     } elseif ($user !== null && $user->role !== 'admin' && in_array($user->team, ['IT', 'IPSRS'], true)) {
         $staffTeam = $user->team;
+    } elseif ($user !== null && $user->role === 'supervisor' && $user->unit_id) {
+        // Supervisor whose unit is IT or IPSRS should see all tickets for that category
+        $unitName = Project::find($user->unit_id)?->name;
+        if ($unitName === 'IT' || $unitName === 'IPSRS') {
+            $staffTeam = $unitName;
+        }
     }
 
     if ($staffTeam) {
@@ -103,6 +109,12 @@ Route::get('/dashboard', function () {
         $staffTeam = 'IPSRS';
     } elseif ($user !== null && $user->role !== 'admin' && in_array($user->team, ['IT', 'IPSRS'], true)) {
         $staffTeam = $user->team;
+    } elseif ($user !== null && $user->role === 'supervisor' && $user->unit_id) {
+        // Supervisor whose unit is IT or IPSRS should see all tickets for that category
+        $unitName = Project::find($user->unit_id)?->name;
+        if ($unitName === 'IT' || $unitName === 'IPSRS') {
+            $staffTeam = $unitName;
+        }
     }
 
     if ($staffTeam) {
