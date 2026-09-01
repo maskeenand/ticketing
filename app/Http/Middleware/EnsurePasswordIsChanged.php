@@ -18,9 +18,21 @@ class EnsurePasswordIsChanged
     {
         $user = $request->user();
 
-        if ($user && $user->password_changed_at === null) {
-            if (! $request->routeIs('password.change') && ! $request->routeIs('password.update') && ! $request->routeIs('logout')) {
-                return Redirect::route('password.change');
+        if ($user) {
+            // Ambil langsung dari DB agar selalu dapat nilai terbaru
+            $changedAt = \Illuminate\Support\Facades\DB::table('users')
+                ->where('id', $user->id)
+                ->value('password_changed_at');
+
+            if ($changedAt === null) {
+                $isPasswordRoute = $request->routeIs('password.change')
+                    || $request->routeIs('password.change.update')
+                    || $request->is('change-password')
+                    || $request->routeIs('logout');
+
+                if (! $isPasswordRoute) {
+                    return Redirect::route('password.change');
+                }
             }
         }
 

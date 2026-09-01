@@ -130,6 +130,7 @@ class UserManagementController extends Controller
             'unit_id' => ['required', 'integer', 'exists:projects,id'],
             'role' => ['required', 'in:member,admin,it,ipsrs,supervisor'],
             'supervisor_id' => ['nullable', 'integer', 'exists:users,id'],
+            'password' => ['nullable', 'string', 'min:6', 'confirmed'],
         ]);
 
         // If supervisor, only allow roles of their team and set unit_id to their own
@@ -154,22 +155,30 @@ class UserManagementController extends Controller
             $team = 'IPSRS';
         }
 
+        $hasCustomPassword = !empty($validated['password']);
+
         User::query()->create([
             'name' => $validated['name'],
             'username' => $validated['username'],
             'employee_id' => $validated['employee_id'] ?? null,
             'email' => $validated['email'],
-            'password' => Hash::make('password'),
+            'password' => Hash::make($hasCustomPassword ? $validated['password'] : 'password'),
             'unit_id' => (int) $validated['unit_id'],
             'role' => $role,
             'team' => $team,
             'supervisor_id' => $validated['supervisor_id'] ?? null,
-            'password_changed_at' => null,
+            // Jika password di-set admin, tandai sudah ganti (tidak perlu ganti lagi saat login)
+            // Jika pakai default, user harus ganti saat login pertama
+            'password_changed_at' => $hasCustomPassword ? now() : null,
         ]);
+
+        $message = $hasCustomPassword
+            ? 'User berhasil dibuat dengan password yang ditentukan.'
+            : 'User berhasil dibuat. Password default: password';
 
         return redirect()
             ->route('users.index')
-            ->with('success', 'User berhasil dibuat. Password default: password');
+            ->with('success', $message);
     }
 
     public function edit(Request $request, User $user)

@@ -187,7 +187,7 @@ export default function Authenticated({
                                 variant={sidebarCollapsed ? 'icon' : 'full'}
                                 className={
                                     sidebarCollapsed
-                                        ? 'block h-14 w-14 drop-shadow-lg'
+                                        ? 'block h-12 w-12 rounded-xl object-contain drop-shadow-lg'
                                         : 'block h-24 w-auto drop-shadow-lg'
                                 }
                             />

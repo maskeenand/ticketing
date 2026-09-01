@@ -52,6 +52,8 @@ export default function UsersCreate({
         unit_id: unit?.id ? String(unit.id) : '',
         role: isSupervisor ? 'member' : 'member',
         supervisor_id: isSupervisor ? String(currentUserId) : '',
+        password: '',
+        password_confirmation: '',
     });
 
     const submit = (e: FormEvent) => {
@@ -279,7 +281,7 @@ export default function UsersCreate({
                             </div>
 
                             <div className="pt-4 border-t border-slate-100">
-                                <div className="mb-4 flex items-center gap-3">
+                                <div className="mb-5 flex items-center gap-3">
                                     <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-to-br from-amber-100 to-orange-100 text-amber-600">
                                         <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="h-5 w-5">
                                             <path strokeLinecap="round" strokeLinejoin="round" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
@@ -287,7 +289,37 @@ export default function UsersCreate({
                                     </div>
                                     <div>
                                         <h4 className="text-sm font-semibold text-slate-900">Keamanan Akun</h4>
-                                        <p className="text-xs text-slate-500">Password default: <span className="font-semibold text-amber-700">password</span> • Pengguna harus mengganti password pada saat login pertama</p>
+                                        <p className="text-xs text-slate-500">Kosongkan untuk menggunakan password default: <span className="font-semibold text-amber-700">password</span></p>
+                                    </div>
+                                </div>
+
+                                <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
+                                    <div>
+                                        <InputLabel htmlFor="password" value="Password (Opsional)" />
+                                        <TextInput
+                                            id="password"
+                                            type="password"
+                                            className="mt-2 block w-full rounded-xl border-slate-200 bg-slate-50/50 px-4 py-3 text-slate-900 placeholder-slate-400 shadow-sm transition-all duration-200 focus:border-teal-500 focus:bg-white focus:ring-2 focus:ring-teal-500/20"
+                                            value={data.password}
+                                            onChange={(e) => setData('password', e.target.value)}
+                                            placeholder="Minimal 6 karakter"
+                                            autoComplete="new-password"
+                                        />
+                                        <InputError message={errors.password} className="mt-2" />
+                                    </div>
+
+                                    <div>
+                                        <InputLabel htmlFor="password_confirmation" value="Konfirmasi Password" />
+                                        <TextInput
+                                            id="password_confirmation"
+                                            type="password"
+                                            className="mt-2 block w-full rounded-xl border-slate-200 bg-slate-50/50 px-4 py-3 text-slate-900 placeholder-slate-400 shadow-sm transition-all duration-200 focus:border-teal-500 focus:bg-white focus:ring-2 focus:ring-teal-500/20"
+                                            value={data.password_confirmation}
+                                            onChange={(e) => setData('password_confirmation', e.target.value)}
+                                            placeholder="Ulangi password"
+                                            autoComplete="new-password"
+                                        />
+                                        <InputError message={errors.password_confirmation} className="mt-2" />
                                     </div>
                                 </div>
                             </div>

@@ -10,15 +10,23 @@ export default function ApplicationLogo({
     const [useFallback, setUseFallback] = useState(false);
 
     if (!useFallback) {
+        if (variant === 'icon') {
+            // Mode minimize: tampilkan logo persisi sebagai icon kotak kecil
+            return (
+                <img
+                    src="/logo-oetomo2.png"
+                    alt="Oetomo Hospital"
+                    className={('block object-contain ' + (className ?? '')).trim()}
+                    onError={() => setUseFallback(true)}
+                />
+            );
+        }
+
         return (
             <img
-                src="/logo-oetomo.png"
+                src="/logo-oetomo2.png"
                 alt="Helpdesk Oetomo Hospital"
-                className={
-                    variant === 'icon'
-                        ? ('object-cover object-left ' + (className ?? '')).trim()
-                        : className
-                }
+                className={className}
                 onError={() => setUseFallback(true)}
             />
         );
