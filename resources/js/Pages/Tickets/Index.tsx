@@ -158,7 +158,9 @@ function typePillClass(type: string | null | undefined) {
 }
 
 function textPreview(value: string, maxLength: number) {
-    const normalized = value.replace(/\s+/g, ' ').trim();
+    // Strip HTML tags before displaying as plain text
+    const stripped = value.replace(/<[^>]*>/g, ' ');
+    const normalized = stripped.replace(/\s+/g, ' ').trim();
     if (normalized.length <= maxLength) return normalized;
     return normalized.slice(0, Math.max(0, maxLength - 1)).trimEnd() + '…';
 }
