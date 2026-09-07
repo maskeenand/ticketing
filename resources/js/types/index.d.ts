@@ -8,6 +8,7 @@ export interface User {
     team?: string | null;
     role?: string | null;
     avatar?: string | null;
+    avatar_url?: string | null;
 }
 
 export type PageProps<

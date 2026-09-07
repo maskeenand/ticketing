@@ -10,7 +10,16 @@ use App\Models\Ticket;
 use Illuminate\Http\Request;
 use Illuminate\Foundation\Application;
 use Illuminate\Support\Facades\Route;
+use Illuminate\Support\Facades\Storage;
 use Inertia\Inertia;
+
+Route::get('/media/avatar/{filename}', function (string $filename) {
+    $path = 'avatars/'.$filename;
+
+    abort_unless(Storage::disk('public')->exists($path), 404);
+
+    return Storage::disk('public')->response($path);
+})->where('filename', '[^/]+')->middleware('auth')->name('avatar');
 
 Route::get('/', function () {
     if (request()->user() === null) {

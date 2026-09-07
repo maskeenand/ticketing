@@ -663,7 +663,7 @@ export default function Authenticated({
                                                 >
                                                     <span className="inline-flex h-10 w-10 items-center justify-center rounded-full bg-gradient-to-br from-teal-500 to-cyan-600 text-sm font-bold text-white shadow-xl shadow-teal-500/40 overflow-hidden">
                                                         {user.avatar ? (
-                                                            <img src={`/storage/${user.avatar}`} alt={user.name} className="h-full w-full object-cover" />
+                                                            <img src={user.avatar_url ?? undefined} alt={user.name} className="h-full w-full object-cover" />
                                                         ) : (
                                                             user.name.slice(0, 1).toUpperCase()
                                                         )}

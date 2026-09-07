@@ -29,7 +29,7 @@ export default function UpdateProfileInformation({
     const [uploading, setUploading] = useState(false);
     const [uploadError, setUploadError] = useState<string | null>(null);
 
-    const avatarUrl = (user as any).avatar ? `/storage/${(user as any).avatar}` : null;
+    const avatarUrl = (user as any).avatar_url ?? null;
 
     const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         const file = e.target.files?.[0] ?? null;

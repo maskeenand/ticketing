@@ -45,6 +45,10 @@ class User extends Authenticatable
         'remember_token',
     ];
 
+    protected $appends = [
+        'avatar_url',
+    ];
+
     /**
      * Get the attributes that should be cast.
      *
@@ -57,6 +61,13 @@ class User extends Authenticatable
             'password_changed_at' => 'datetime',
             'password' => 'hashed',
         ];
+    }
+
+    public function getAvatarUrlAttribute(): ?string
+    {
+        return $this->avatar
+            ? request()->getBaseUrl().'/media/avatar/'.rawurlencode(basename($this->avatar))
+            : null;
     }
 
     public function requestedTickets(): HasMany
