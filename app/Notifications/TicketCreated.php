@@ -2,6 +2,7 @@
 
 namespace App\Notifications;
 
+use App\Models\EmailLog;
 use App\Models\Ticket;
 use App\Models\User;
 use Illuminate\Bus\Queueable;
@@ -20,7 +21,7 @@ class TicketCreated extends Notification
 
     public function via(object $notifiable): array
     {
-        $channels = ['database']; // Always use database channel for notifications
+        $channels = ['database'];
         $email = $notifiable->email ?? null;
         if (is_string($email) && trim($email) !== '') {
             $channels[] = 'mail';
@@ -32,10 +33,10 @@ class TicketCreated extends Notification
     public function toDatabase(object $notifiable): array
     {
         return [
-            'ticket_id' => $this->ticket->id,
-            'ticket_code' => $this->ticket->code,
+            'ticket_id'    => $this->ticket->id,
+            'ticket_code'  => $this->ticket->code,
             'ticket_title' => $this->ticket->title,
-            'actor_name' => $this->actor->name,
+            'actor_name'   => $this->actor->name,
         ];
     }
 
@@ -48,6 +49,24 @@ class TicketCreated extends Notification
 
         $subjectPrefix = $isRequester ? 'Ticket berhasil dibuat' : 'Ticket baru';
         $subject = "{$subjectPrefix}: {$this->ticket->code} - {$this->ticket->title}";
+
+        // Create pending log — event listener will update to sent/failed after SMTP result
+        EmailLog::create([
+            'recipient_email'   => $notifiable->email,
+            'recipient_name'    => $notifiable->name ?? null,
+            'subject'           => $subject,
+            'notification_type' => 'TicketCreated',
+            'ticket_id'         => $this->ticket->id,
+            'ticket_code'       => $this->ticket->code,
+            'status'            => 'pending',
+            'attempt_count'     => 1,
+            'notifiable_type'   => get_class($notifiable),
+            'notifiable_id'     => $notifiable->id ?? null,
+            'payload'           => json_encode([
+                'ticket_id' => $this->ticket->id,
+                'actor_id'  => $this->actor->id,
+            ]),
+        ]);
 
         $mail = (new MailMessage)->subject($subject);
 
@@ -80,4 +99,3 @@ class TicketCreated extends Notification
         return $mail->action('Lihat Ticket', route('tickets.show', $this->ticket->id));
     }
 }
-

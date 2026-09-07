@@ -7,6 +7,7 @@ export interface User {
     unit_id?: number | null;
     team?: string | null;
     role?: string | null;
+    avatar?: string | null;
 }
 
 export type PageProps<

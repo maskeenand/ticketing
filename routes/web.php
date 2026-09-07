@@ -34,7 +34,6 @@ Route::get('/', function () {
     } elseif ($user !== null && $user->role !== 'admin' && in_array($user->team, ['IT', 'IPSRS'], true)) {
         $staffTeam = $user->team;
     } elseif ($user !== null && $user->role === 'supervisor' && $user->unit_id) {
-        // Supervisor whose unit is IT or IPSRS should see all tickets for that category
         $unitName = Project::find($user->unit_id)?->name;
         if ($unitName === 'IT' || $unitName === 'IPSRS') {
             $staffTeam = $unitName;
@@ -75,6 +74,31 @@ Route::get('/', function () {
             : null;
     }
 
+    // Build 30-day activity chart
+    $days = collect(range(29, 0))->map(fn ($i) => now()->subDays($i)->startOfDay());
+    $rangeStart = now()->subDays(29)->startOfDay();
+
+    $createdMap = (clone $query)->reorder()
+        ->where('created_at', '>=', $rangeStart)
+        ->selectRaw('DATE(created_at) as day, COUNT(*) as total')
+        ->groupBy('day')
+        ->pluck('total', 'day');
+
+    $closedMap = (clone $query)->reorder()
+        ->whereIn('status', ['resolved', 'closed'])
+        ->whereRaw('COALESCE(closed_at, resolved_at) >= ?', [$rangeStart])
+        ->selectRaw('DATE(COALESCE(closed_at, resolved_at)) as day, COUNT(*) as total')
+        ->groupBy('day')
+        ->pluck('total', 'day');
+
+    $chart = [
+        'categories' => $days->map(fn ($d) => $d->toIso8601String())->values()->toArray(),
+        'series' => [
+            ['name' => 'Tiket Dibuat',  'data' => $days->map(fn ($d) => (int) ($createdMap[$d->toDateString()] ?? 0))->values()->toArray()],
+            ['name' => 'Tiket Selesai', 'data' => $days->map(fn ($d) => (int) ($closedMap[$d->toDateString()] ?? 0))->values()->toArray()],
+        ],
+    ];
+
     return Inertia::render('Dashboard', [
         'unit' => $unit,
         'statusCounts' => [
@@ -85,6 +109,7 @@ Route::get('/', function () {
             'closed' => (int) ($statusCounts['closed'] ?? 0),
         ],
         'tickets' => $tickets,
+        'chart' => $chart,
         'quota' => [
             'total_mandays' => 3,
             'used_mandays' => 0,
@@ -110,7 +135,6 @@ Route::get('/dashboard', function () {
     } elseif ($user !== null && $user->role !== 'admin' && in_array($user->team, ['IT', 'IPSRS'], true)) {
         $staffTeam = $user->team;
     } elseif ($user !== null && $user->role === 'supervisor' && $user->unit_id) {
-        // Supervisor whose unit is IT or IPSRS should see all tickets for that category
         $unitName = Project::find($user->unit_id)?->name;
         if ($unitName === 'IT' || $unitName === 'IPSRS') {
             $staffTeam = $unitName;
@@ -151,6 +175,31 @@ Route::get('/dashboard', function () {
             : null;
     }
 
+    // Build 30-day activity chart
+    $days = collect(range(29, 0))->map(fn ($i) => now()->subDays($i)->startOfDay());
+    $rangeStart = now()->subDays(29)->startOfDay();
+
+    $createdMap = (clone $query)->reorder()
+        ->where('created_at', '>=', $rangeStart)
+        ->selectRaw('DATE(created_at) as day, COUNT(*) as total')
+        ->groupBy('day')
+        ->pluck('total', 'day');
+
+    $closedMap = (clone $query)->reorder()
+        ->whereIn('status', ['resolved', 'closed'])
+        ->whereRaw('COALESCE(closed_at, resolved_at) >= ?', [$rangeStart])
+        ->selectRaw('DATE(COALESCE(closed_at, resolved_at)) as day, COUNT(*) as total')
+        ->groupBy('day')
+        ->pluck('total', 'day');
+
+    $chart = [
+        'categories' => $days->map(fn ($d) => $d->toIso8601String())->values()->toArray(),
+        'series' => [
+            ['name' => 'Tiket Dibuat',  'data' => $days->map(fn ($d) => (int) ($createdMap[$d->toDateString()] ?? 0))->values()->toArray()],
+            ['name' => 'Tiket Selesai', 'data' => $days->map(fn ($d) => (int) ($closedMap[$d->toDateString()] ?? 0))->values()->toArray()],
+        ],
+    ];
+
     return Inertia::render('Dashboard', [
         'unit' => $unit,
         'statusCounts' => [
@@ -161,6 +210,7 @@ Route::get('/dashboard', function () {
             'closed' => (int) ($statusCounts['closed'] ?? 0),
         ],
         'tickets' => $tickets,
+        'chart' => $chart,
         'quota' => [
             'total_mandays' => 3,
             'used_mandays' => 0,
@@ -206,6 +256,16 @@ Route::middleware('auth')->group(function () {
     Route::patch('/tickets/{ticket}/status', [TicketController::class, 'updateStatus'])->name('tickets.status');
     Route::post('/tickets/{ticket}/feedback', [TicketController::class, 'feedback'])->name('tickets.feedback');
     Route::get('/tickets/export', [TicketController::class, 'export'])->name('tickets.export');
+
+    // Web Push Subscriptions
+    Route::get('/push/vapid-key', [\App\Http\Controllers\PushSubscriptionController::class, 'vapidKey'])->name('push.vapid-key');
+    Route::post('/push/subscribe', [\App\Http\Controllers\PushSubscriptionController::class, 'subscribe'])->name('push.subscribe');
+    Route::post('/push/unsubscribe', [\App\Http\Controllers\PushSubscriptionController::class, 'unsubscribe'])->name('push.unsubscribe');
+
+    // Email Log (admin only)
+    Route::get('/email-logs', [\App\Http\Controllers\EmailLogController::class, 'index'])->name('email-logs.index');
+    Route::post('/email-logs/{emailLog}/retry', [\App\Http\Controllers\EmailLogController::class, 'retry'])->name('email-logs.retry');
+    Route::post('/email-logs/retry-all', [\App\Http\Controllers\EmailLogController::class, 'retryAll'])->name('email-logs.retry-all');
 
     Route::get('/notifications/{notification}', function (Request $request, string $notification) {
         $user = $request->user();

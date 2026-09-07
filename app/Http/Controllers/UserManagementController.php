@@ -24,22 +24,33 @@ class UserManagementController extends Controller
 
         $units = Project::query()->orderBy('name')->get(['id', 'name']);
 
+        $q = $request->string('q')->toString();
+
         $query = User::query()->with(['unit:id,name', 'supervisor:id,name']);
 
         if ($isSupervisor) {
             $team = $this->getTeam($user);
-            $query->where(function ($q) use ($user, $team) {
-                $q->where('supervisor_id', $user->id);
+            $query->where(function ($qb) use ($user, $team) {
+                $qb->where('supervisor_id', $user->id);
                 if ($team) {
-                    $q->orWhere(function ($sq) use ($team) {
+                    $qb->orWhere(function ($sq) use ($team) {
                         $sq->where('team', $team);
                     });
                 }
             });
         }
 
+        if ($q !== '') {
+            $query->where(function ($qb) use ($q) {
+                $qb->where('name', 'like', "%{$q}%")
+                   ->orWhere('username', 'like', "%{$q}%")
+                   ->orWhere('email', 'like', "%{$q}%")
+                   ->orWhere('employee_id', 'like', "%{$q}%");
+            });
+        }
+
         $users = $query->orderBy('name')
-            ->paginate(10)
+            ->paginate(15)
             ->withQueryString()
             ->through(fn (User $u) => [
                 'id' => $u->id,
@@ -59,6 +70,7 @@ class UserManagementController extends Controller
             'units' => $units,
             'filters' => [
                 'unit_id' => $user->unit_id ? (int) $user->unit_id : null,
+                'q' => $q,
             ],
             'users' => $users,
             'isAdminUnit' => $isAdminUnit,

@@ -134,7 +134,6 @@ export default function TicketsCreate({ projects }: Props) {
                                             value={data.description}
                                             config={editorConfig}
                                             onBlur={(value) => setData('description', value)}
-                                            onChange={(value) => setData('description', value)}
                                         />
                                     </div>
                                     <InputError message={errors.description} className="mt-2" />

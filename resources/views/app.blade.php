@@ -7,7 +7,7 @@
         <title inertia>{{ config('app.name', 'Laravel') }}</title>
 
         <!-- Favicon -->
-        <link rel="icon" type="image/png" href="/logo-oetomo2.png">
+        <link rel="icon" type="image/png" href="/logo-oetomo-2.png">
         
         <link rel="manifest" href="/manifest.json">
         <meta name="theme-color" content="#0d9488">

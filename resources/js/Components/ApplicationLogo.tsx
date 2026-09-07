@@ -14,7 +14,7 @@ export default function ApplicationLogo({
             // Mode minimize: tampilkan logo persisi sebagai icon kotak kecil
             return (
                 <img
-                    src="/logo-oetomo2.png"
+                    src="/logo-ticketing.png"
                     alt="Oetomo Hospital"
                     className={('block object-contain ' + (className ?? '')).trim()}
                     onError={() => setUseFallback(true)}
@@ -24,7 +24,7 @@ export default function ApplicationLogo({
 
         return (
             <img
-                src="/logo-oetomo2.png"
+                src="/logo-ticketing.png"
                 alt="Helpdesk Oetomo Hospital"
                 className={className}
                 onError={() => setUseFallback(true)}

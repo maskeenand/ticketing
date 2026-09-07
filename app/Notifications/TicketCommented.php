@@ -2,6 +2,7 @@
 
 namespace App\Notifications;
 
+use App\Models\EmailLog;
 use App\Models\Ticket;
 use App\Models\TicketComment;
 use App\Models\User;
@@ -23,7 +24,6 @@ class TicketCommented extends Notification
     public function via(object $notifiable): array
     {
         $channels = ['database'];
-
         $email = $notifiable->email ?? null;
         if (is_string($email) && trim($email) !== '') {
             $channels[] = 'mail';
@@ -36,9 +36,29 @@ class TicketCommented extends Notification
     {
         $plain = trim(preg_replace('/\s+/', ' ', strip_tags((string) $this->comment->body)) ?? '');
         $excerpt = $plain !== '' ? mb_substr($plain, 0, 300) : '(tanpa teks)';
+        $subject = "Balasan Ticket {$this->ticket->code}: {$this->ticket->title}";
+
+        // Create pending log — event listener will update to sent/failed
+        EmailLog::create([
+            'recipient_email'   => $notifiable->email,
+            'recipient_name'    => $notifiable->name ?? null,
+            'subject'           => $subject,
+            'notification_type' => 'TicketCommented',
+            'ticket_id'         => $this->ticket->id,
+            'ticket_code'       => $this->ticket->code,
+            'status'            => 'pending',
+            'attempt_count'     => 1,
+            'notifiable_type'   => get_class($notifiable),
+            'notifiable_id'     => $notifiable->id ?? null,
+            'payload'           => json_encode([
+                'ticket_id'  => $this->ticket->id,
+                'comment_id' => $this->comment->id,
+                'actor_id'   => $this->actor->id,
+            ]),
+        ]);
 
         return (new MailMessage)
-            ->subject("Balasan Ticket {$this->ticket->code}: {$this->ticket->title}")
+            ->subject($subject)
             ->line("Ada balasan baru dari {$this->actor->name}.")
             ->line("Ticket: {$this->ticket->code} - {$this->ticket->title}")
             ->line("Pesan: {$excerpt}")
@@ -50,16 +70,16 @@ class TicketCommented extends Notification
         $plain = trim(preg_replace('/\s+/', ' ', strip_tags((string) $this->comment->body)) ?? '');
 
         return [
-            'type' => 'ticket_comment',
-            'ticket_id' => $this->ticket->id,
-            'ticket_code' => $this->ticket->code,
+            'type'         => 'ticket_comment',
+            'ticket_id'    => $this->ticket->id,
+            'ticket_code'  => $this->ticket->code,
             'ticket_title' => $this->ticket->title,
-            'comment_id' => $this->comment->id,
-            'actor_id' => $this->actor->id,
-            'actor_name' => $this->actor->name,
-            'message' => $plain !== '' ? mb_substr($plain, 0, 160) : null,
-            'url' => route('tickets.show', $this->ticket->id),
-            'created_at' => $this->comment->created_at?->toISOString(),
+            'comment_id'   => $this->comment->id,
+            'actor_id'     => $this->actor->id,
+            'actor_name'   => $this->actor->name,
+            'message'      => $plain !== '' ? mb_substr($plain, 0, 160) : null,
+            'url'          => route('tickets.show', $this->ticket->id),
+            'created_at'   => $this->comment->created_at?->toISOString(),
         ];
     }
 

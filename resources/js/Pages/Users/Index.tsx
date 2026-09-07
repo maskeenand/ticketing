@@ -1,6 +1,7 @@
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
 import { PageProps } from '@/types';
 import { Head, Link, router, usePage } from '@inertiajs/react';
+import { useState } from 'react';
 
 type Unit = {
     id: number;
@@ -35,6 +36,7 @@ type ManagedUser = {
 type Props = PageProps<{
     unit: Unit;
     users: Paginated<ManagedUser>;
+    filters: { unit_id?: number | null; q?: string };
     isAdminUnit: boolean;
     isSupervisor: boolean;
     currentUserId: number;
@@ -48,9 +50,24 @@ function roleLabel(role?: string | null) {
     return 'Member';
 }
 
-export default function UsersIndex({ unit, users, isAdminUnit, isSupervisor, currentUserId }: Props) {
+export default function UsersIndex({ unit, users, filters, isAdminUnit, isSupervisor, currentUserId }: Props) {
     const { flash } = usePage<PageProps<{ flash?: { success?: string; error?: string } }>>()
         .props;
+
+    const [search, setSearch] = useState(filters.q ?? '');
+
+    const handleSearch = (e: React.FormEvent) => {
+        e.preventDefault();
+        router.get(route('users.index'), { q: search }, { preserveState: true, replace: true });
+    };
+
+    const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+        const val = e.target.value;
+        setSearch(val);
+        if (val === '') {
+            router.get(route('users.index'), { q: '' }, { preserveState: true, replace: true });
+        }
+    };
 
     return (
         <AuthenticatedLayout
@@ -91,6 +108,51 @@ export default function UsersIndex({ unit, users, isAdminUnit, isSupervisor, cur
                     )}
 
                     <div className="overflow-hidden rounded-lg border border-slate-200 bg-white shadow-sm">
+                        {/* Search bar */}
+                        <div className="border-b border-slate-100 px-4 py-3">
+                            <form onSubmit={handleSearch} className="flex items-center gap-2">
+                                <div className="relative flex-1">
+                                    <svg
+                                        xmlns="http://www.w3.org/2000/svg"
+                                        viewBox="0 0 24 24"
+                                        fill="none"
+                                        stroke="currentColor"
+                                        strokeWidth="1.5"
+                                        className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400"
+                                    >
+                                        <path strokeLinecap="round" strokeLinejoin="round" d="M21 21l-4.35-4.35M17 11A6 6 0 1 1 5 11a6 6 0 0 1 12 0z" />
+                                    </svg>
+                                    <input
+                                        type="text"
+                                        value={search}
+                                        onChange={handleSearchChange}
+                                        placeholder="Cari nama, username, email, atau NIP..."
+                                        className="w-full rounded-md border border-slate-200 bg-slate-50 py-2 pl-9 pr-10 text-sm text-slate-800 placeholder-slate-400 focus:border-slate-400 focus:bg-white focus:outline-none focus:ring-1 focus:ring-slate-400"
+                                    />
+                                    {search && (
+                                        <button
+                                            type="button"
+                                            onClick={() => {
+                                                setSearch('');
+                                                router.get(route('users.index'), { q: '' }, { preserveState: true, replace: true });
+                                            }}
+                                            className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600"
+                                            aria-label="Hapus pencarian"
+                                        >
+                                            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="h-4 w-4">
+                                                <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+                                            </svg>
+                                        </button>
+                                    )}
+                                </div>
+                                <button
+                                    type="submit"
+                                    className="rounded-md bg-slate-900 px-4 py-2 text-sm font-semibold text-white hover:bg-slate-700"
+                                >
+                                    Cari
+                                </button>
+                            </form>
+                        </div>
                         <table className="min-w-full divide-y divide-slate-200">
                             <thead className="bg-slate-50">
                                 <tr>

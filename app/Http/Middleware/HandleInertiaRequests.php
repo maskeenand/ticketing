@@ -68,6 +68,13 @@ class HandleInertiaRequests extends Middleware
                         ])
                     : [],
             ],
+            // Badge count untuk admin — email yang gagal dikirim
+            'failedEmailCount' => fn () => $user && $user->role === 'admin' && Schema::hasTable('email_logs')
+                ? \App\Models\EmailLog::where('status', 'failed')->count()
+                : 0,
+
+            // VAPID public key for Web Push
+            'vapidPublicKey' => config('app.vapid_public_key'),
         ];
     }
 }

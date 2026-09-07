@@ -5,6 +5,7 @@ import ResponsiveNavLink from '@/Components/ResponsiveNavLink';
 import { Link, router, usePage } from '@inertiajs/react';
 import { PropsWithChildren, ReactNode, useEffect, useState, useRef } from 'react';
 import { playNotificationSound } from '@/utils/soundNotification';
+import { usePushNotification } from '@/hooks/usePushNotification';
 
 export default function Authenticated({
     header,
@@ -12,9 +13,10 @@ export default function Authenticated({
 }: PropsWithChildren<{ header?: ReactNode }>) {
     const page = usePage();
     const user = page.props.auth.user;
-    const dbHost = page.props.db_host ?? '100.20.30.254';
-    const dbPort = page.props.db_port ?? '5432';
-    const dbName = page.props.db_name ?? 'helpdesk_dev';
+    const { permission, subscribed, subscribe, unsubscribe } = usePushNotification();
+    const dbHost = (page.props.db_host as string | undefined) ?? '100.20.30.254';
+    const dbPort = (page.props.db_port as string | undefined) ?? '5432';
+    const dbName = (page.props.db_name as string | undefined) ?? 'helpdesk_dev';
     const notifications = page.props.notifications;
     const unreadCount = notifications?.unread_count ?? 0;
     const notificationItems = notifications?.items ?? [];
@@ -86,12 +88,12 @@ export default function Authenticated({
     const ticketClientActive = isTicketsRoute && currentViewMode === 'client';
     
     const ticketsMenuParentActive = myTicketsActive || route().current('tickets.create');
-    const [ticketMenuOpen, setTicketMenuOpen] = useState(ticketsMenuParentActive);
     const canManageUsers = user.role === 'admin' || user.role === 'supervisor';
+    const isAdmin = user.role === 'admin';
     const showTicketMenu = true; // semua user bisa create ticket
     const isSupervisor = user.role === 'supervisor';
-    // Staf = semua yang punya akses "client mode" (it, ipsrs, team IT/IPSRS, supervisor)
-    const isStaffRole = user.role === 'it' || user.role === 'ipsrs' || user.role === 'supervisor' || Boolean(user.team);
+    // Staf = semua yang punya akses "client mode" (admin, it, ipsrs, team IT/IPSRS, supervisor)
+    const isStaffRole = user.role === 'admin' || user.role === 'it' || user.role === 'ipsrs' || user.role === 'supervisor' || Boolean(user.team);
 
     const sidebarWidthClass = sidebarCollapsed ? 'w-20' : 'w-72';
 
@@ -249,109 +251,11 @@ export default function Authenticated({
                                 }
                             />
 
-                            {/* My Tickets — untuk semua staf (dual-role: personal + client) */}
-                            {isStaffRole && (
-                                <SidebarItem
-                                    href={route('tickets.index', { view_mode: 'personal' })}
-                                    active={myTicketsActive}
-                                    label="My Tickets"
-                                    icon={
-                                        <svg
-                                            xmlns="http://www.w3.org/2000/svg"
-                                            viewBox="0 0 24 24"
-                                            fill="none"
-                                            stroke="currentColor"
-                                            strokeWidth="2"
-                                            className="h-5 w-5"
-                                        >
-                                            <path
-                                                strokeLinecap="round"
-                                                strokeLinejoin="round"
-                                                d="M7.5 4.5h9A2.25 2.25 0 0118.75 6.75v12A2.25 2.25 0 0116.5 21h-9A2.25 2.25 0 015.25 18.75v-12A2.25 2.25 0 017.5 4.5z"
-                                            />
-                                            <path
-                                                strokeLinecap="round"
-                                                strokeLinejoin="round"
-                                                d="M8.25 9h7.5M8.25 12h7.5M8.25 15h4.5"
-                                            />
-                                        </svg>
-                                    }
-                                />
-                            )}
-
-                            {showTicketMenu && (
-                                <>
-                                    <button
-                                        type="button"
-                                        onClick={() => setTicketMenuOpen((v) => !v)}
-                                        className={
-                                            'flex w-full items-center gap-3 rounded-2xl px-3 py-3 text-left text-sm font-semibold transition-all duration-200 ' +
-                                            (ticketsMenuParentActive
-                                                ? 'bg-gradient-to-r from-teal-50 to-cyan-50 text-teal-700 shadow-sm'
-                                                : 'text-slate-600 hover:bg-slate-50 hover:text-slate-900')
-                                        }
-                                    >
-                                        <SidebarIcon active={ticketsMenuParentActive}>
-                                            <svg
-                                                xmlns="http://www.w3.org/2000/svg"
-                                                viewBox="0 0 24 24"
-                                                fill="none"
-                                                stroke="currentColor"
-                                                strokeWidth="2"
-                                                strokeLinecap="round"
-                                                strokeLinejoin="round"
-                                                className="h-6 w-6"
-                                            >
-                                                <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
-                                                <polyline points="14 2 14 8 20 8" />
-                                                <line x1="16" x2="8" y1="13" y2="13" />
-                                                <line x1="16" x2="8" y1="17" y2="17" />
-                                                <polyline points="10 9 9 9 8 9" />
-                                            </svg>
-                                        </SidebarIcon>
-                                        {!sidebarCollapsed && (
-                                            <>
-                                                <span className="truncate">Ticket</span>
-                                                <span className="ml-auto inline-flex items-center text-slate-400">
-                                                    <svg
-                                                        xmlns="http://www.w3.org/2000/svg"
-                                                        viewBox="0 0 20 20"
-                                                        fill="currentColor"
-                                                        className={
-                                                            'h-4 w-4 transition-all duration-300 ' +
-                                                            (ticketMenuOpen
-                                                                ? 'rotate-90'
-                                                                : '')
-                                                        }
-                                                    >
-                                                        <path
-                                                            fillRule="evenodd"
-                                                            d="M7.21 14.77a.75.75 0 01.02-1.06L10.94 10 7.23 6.29a.75.75 0 111.06-1.06l4.24 4.24a.75.75 0 010 1.06l-4.24 4.24a.75.75 0 01-1.06.02z"
-                                                            clipRule="evenodd"
-                                                        />
-                                                    </svg>
-                                                </span>
-                                            </>
-                                        )}
-                                    </button>
-
-                                    {!sidebarCollapsed && ticketMenuOpen && (
-                                        <div className="ml-4 space-y-2 border-l-2 border-teal-200 pl-4">
-                                            <NavLink
-                                                href={route('tickets.create')}
-                                                active={route().current('tickets.create')}
-                                            >
-                                                Create Ticket
-                                            </NavLink>
-                                        </div>
-                                    )}
-                                </>
-                            )}
-
+                            {/* My Tickets — untuk semua user */}
                             <SidebarItem
-                                href={route('tickets.index', { view_mode: 'client' })}
-                                active={ticketClientActive}
-                                label="Ticket Client"
+                                href={route('tickets.index', { view_mode: 'personal' })}
+                                active={myTicketsActive}
+                                label="My Tickets"
                                 icon={
                                     <svg
                                         xmlns="http://www.w3.org/2000/svg"
@@ -359,17 +263,46 @@ export default function Authenticated({
                                         fill="none"
                                         stroke="currentColor"
                                         strokeWidth="2"
-                                        strokeLinecap="round"
-                                        strokeLinejoin="round"
-                                        className="h-6 w-6"
+                                        className="h-5 w-5"
                                     >
-                                        <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" />
-                                        <circle cx="9" cy="7" r="4" />
-                                        <path d="M23 21v-2a4 4 0 0 0-3-3.87" />
-                                        <path d="M16 3.13a4 4 0 0 1 0 7.75" />
+                                        <path
+                                            strokeLinecap="round"
+                                            strokeLinejoin="round"
+                                            d="M7.5 4.5h9A2.25 2.25 0 0118.75 6.75v12A2.25 2.25 0 0116.5 21h-9A2.25 2.25 0 015.25 18.75v-12A2.25 2.25 0 017.5 4.5z"
+                                        />
+                                        <path
+                                            strokeLinecap="round"
+                                            strokeLinejoin="round"
+                                            d="M8.25 9h7.5M8.25 12h7.5M8.25 15h4.5"
+                                        />
                                     </svg>
                                 }
                             />
+
+                            {isStaffRole && (
+                                <SidebarItem
+                                    href={route('tickets.index', { view_mode: 'client' })}
+                                    active={ticketClientActive}
+                                    label="Ticket Client"
+                                    icon={
+                                        <svg
+                                            xmlns="http://www.w3.org/2000/svg"
+                                            viewBox="0 0 24 24"
+                                            fill="none"
+                                            stroke="currentColor"
+                                            strokeWidth="2"
+                                            strokeLinecap="round"
+                                            strokeLinejoin="round"
+                                            className="h-6 w-6"
+                                        >
+                                            <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" />
+                                            <circle cx="9" cy="7" r="4" />
+                                            <path d="M23 21v-2a4 4 0 0 0-3-3.87" />
+                                            <path d="M16 3.13a4 4 0 0 1 0 7.75" />
+                                        </svg>
+                                    }
+                                />
+                            )}
 
                             {canManageUsers && (
                                 <SidebarItem
@@ -394,6 +327,36 @@ export default function Authenticated({
                                         </svg>
                                     }
                                 />
+                            )}
+
+                            {/* Email Log — admin only */}
+                            {isAdmin && (
+                                <Link
+                                    href={route('email-logs.index')}
+                                    className={
+                                        'flex items-center gap-3 rounded-2xl px-3 py-3 text-sm font-semibold transition-all duration-300 ' +
+                                        (route().current('email-logs.*')
+                                            ? 'bg-gradient-to-r from-teal-50 to-cyan-50 text-teal-700 shadow-md'
+                                            : 'text-slate-600 hover:bg-slate-50 hover:text-slate-900')
+                                    }
+                                >
+                                    <SidebarIcon active={route().current('email-logs.*')}>
+                                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="h-6 w-6">
+                                            <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z" />
+                                            <polyline points="22,6 12,13 2,6" />
+                                        </svg>
+                                    </SidebarIcon>
+                                    {!sidebarCollapsed && (
+                                        <span className="flex flex-1 items-center justify-between truncate">
+                                            Email Log
+                                            {(page.props as Record<string, unknown>).failedEmailCount as number > 0 && (
+                                                <span className="ml-2 inline-flex h-5 min-w-5 items-center justify-center rounded-full bg-rose-500 px-1.5 text-[10px] font-bold text-white">
+                                                    {(page.props as Record<string, unknown>).failedEmailCount as number}
+                                                </span>
+                                            )}
+                                        </span>
+                                    )}
+                                </Link>
                             )}
 
                             {canManageUsers && (
@@ -539,6 +502,44 @@ export default function Authenticated({
                                         </svg>
                                     )}
                                 </button>
+
+                                {/* Push Notification Toggle */}
+                                {permission !== 'unsupported' && (
+                                    <button
+                                        type="button"
+                                        onClick={() => subscribed ? unsubscribe() : subscribe()}
+                                        className={
+                                            'inline-flex h-12 w-12 items-center justify-center rounded-2xl bg-gradient-to-r from-slate-100 to-slate-50 hover:from-slate-200 hover:to-slate-100 hover:scale-110 focus:outline-none transition-all duration-300 shadow-sm ' +
+                                            (permission === 'denied' ? 'opacity-50 cursor-not-allowed' : '')
+                                        }
+                                        title={
+                                            permission === 'denied'
+                                                ? 'Notifikasi diblokir browser — ubah di pengaturan browser'
+                                                : subscribed
+                                                ? 'Matikan push notifikasi desktop'
+                                                : 'Aktifkan push notifikasi desktop'
+                                        }
+                                        disabled={permission === 'denied'}
+                                    >
+                                        {subscribed ? (
+                                            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="h-6 w-6 text-teal-600">
+                                                <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9" />
+                                                <path d="M13.73 21a2 2 0 0 1-3.46 0" />
+                                                <line x1="1" y1="1" x2="23" y2="23" className="hidden" />
+                                                <circle cx="18" cy="6" r="4" fill="#10b981" stroke="none" />
+                                            </svg>
+                                        ) : (
+                                            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="h-6 w-6 text-slate-400">
+                                                <path d="M13.73 21a2 2 0 0 1-3.46 0" />
+                                                <path d="M18.63 13A17.9 17.9 0 0 1 18 8" />
+                                                <path d="M6.26 6.26A5.86 5.86 0 0 0 6 8c0 7-3 9-3 9h14" />
+                                                <path d="M18 8a6 6 0 0 0-9.33-5" />
+                                                <line x1="1" y1="1" x2="23" y2="23" />
+                                            </svg>
+                                        )}
+                                    </button>
+                                )}
+
                                 <Dropdown>
                                     <Dropdown.Trigger>
                                         <span className="relative inline-flex h-12 w-12 items-center justify-center rounded-2xl bg-gradient-to-r from-slate-100 to-slate-50 text-slate-600 hover:from-slate-200 hover:to-slate-100 hover:text-slate-800 hover:scale-110 focus:outline-none transition-all duration-300 shadow-sm">

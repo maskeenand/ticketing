@@ -72,12 +72,18 @@ class TicketController extends Controller
             ->with(['project:id,name', 'requester:id,name', 'creator:id,name', 'assignee:id,name', 'latestComment.user:id,name'])
             ->orderByDesc('created_at');
 
-        $isStaffUser = $staffTeam !== null || $isSupervisor; // semua staf (it/ipsrs/team/supervisor)
-
         if (! $effectiveStaffTeam && ! $effectiveIsUnitAdmin && ! ($isStaffUser && $viewMode === 'client')) {
             if ($isStaffUser && $viewMode === 'personal') {
-                // Staf di personal mode: hanya tiket yang dia buat/request sendiri
-                $filters['raised_by'] = $user->id;
+                // Staf di personal mode: tampilkan tiket dari semua user di unit yang sama
+                if ($user !== null && $user->unit_id) {
+                    $unitMemberIds = \App\Models\User::where('unit_id', $user->unit_id)
+                        ->pluck('id')
+                        ->toArray();
+                    $filters['_unit_member_ids'] = $unitMemberIds;
+                } else {
+                    // Tidak punya unit, fallback ke tiket sendiri
+                    $filters['raised_by'] = $user->id;
+                }
                 $filters['project_id'] = null;
             } elseif ($user !== null && $user->unit_id) {
                 $filters['project_id'] = (int) $user->unit_id;
@@ -377,7 +383,33 @@ class TicketController extends Controller
             $recipients = User::query()->whereIn('id', $recipientIds)->get();
             // Send notifications after response to make it feel faster
             dispatch(function () use ($recipients, $ticket, $user) {
-                Notification::send($recipients, new TicketCreated($ticket, $user));
+                foreach ($recipients as $recipient) {
+                    try {
+                        \Illuminate\Support\Facades\Notification::send([$recipient], new TicketCreated($ticket, $user));
+                        // Mark sent after successful send
+                        \App\Models\EmailLog::where('recipient_email', $recipient->email)
+                            ->where('status', 'pending')
+                            ->where('ticket_id', $ticket->id)
+                            ->latest()
+                            ->first()
+                            ?->markSent();
+                    } catch (\Throwable $e) {
+                        \App\Models\EmailLog::where('recipient_email', $recipient->email)
+                            ->where('status', 'pending')
+                            ->where('ticket_id', $ticket->id)
+                            ->latest()
+                            ->first()
+                            ?->markFailed($e->getMessage());
+                    }
+                }
+
+                // Send web push to all recipients at once
+                \App\Http\Controllers\PushSubscriptionController::sendToUsers(
+                    $recipients->pluck('id')->toArray(),
+                    'Tiket Baru: ' . $ticket->code,
+                    $ticket->title,
+                    route('tickets.show', $ticket->id)
+                );
             })->afterResponse();
         }
 
@@ -813,7 +845,32 @@ class TicketController extends Controller
 
         if ($recipientIds->isNotEmpty()) {
             $recipients = User::query()->whereIn('id', $recipientIds)->get();
-            Notification::send($recipients, new TicketCommented($ticket, $comment, $user));
+            foreach ($recipients as $recipient) {
+                try {
+                    \Illuminate\Support\Facades\Notification::send([$recipient], new TicketCommented($ticket, $comment, $user));
+                    \App\Models\EmailLog::where('recipient_email', $recipient->email)
+                        ->where('status', 'pending')
+                        ->where('ticket_id', $ticket->id)
+                        ->latest()
+                        ->first()
+                        ?->markSent();
+                } catch (\Throwable $e) {
+                    \App\Models\EmailLog::where('recipient_email', $recipient->email)
+                        ->where('status', 'pending')
+                        ->where('ticket_id', $ticket->id)
+                        ->latest()
+                        ->first()
+                        ?->markFailed($e->getMessage());
+                }
+            }
+
+            // Send web push for new comment
+            \App\Http\Controllers\PushSubscriptionController::sendToUsers(
+                $recipients->pluck('id')->toArray(),
+                'Komentar Baru: ' . $ticket->code,
+                'Ada balasan dari ' . $user->name . ': ' . $ticket->title,
+                route('tickets.show', $ticket->id)
+            );
         }
 
         return back()->with('success', 'Komentar tersimpan.');
@@ -941,6 +998,11 @@ class TicketController extends Controller
 
         if ($filters['raised_by'] ?? null) {
             $query->where('requester_id', $filters['raised_by']);
+        }
+
+        // Filter by unit member IDs (personal mode untuk staf)
+        if (!empty($filters['_unit_member_ids'] ?? null)) {
+            $query->whereIn('requester_id', $filters['_unit_member_ids']);
         }
 
         if ($filters['created_by'] ?? null) {

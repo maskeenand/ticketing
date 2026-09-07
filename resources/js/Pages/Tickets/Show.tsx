@@ -502,7 +502,6 @@ export default function TicketShow({ ticket, comments, canEdit, availableAssigne
                 value={data.body}
                 config={editorConfig}
                 onBlur={(value) => setData('body', value)}
-                onChange={(value) => setData('body', value)}
               />
             </div>
             <div className="mt-4 rounded-md border border-slate-200 bg-white px-3 py-3">
