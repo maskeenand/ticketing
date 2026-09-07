@@ -408,7 +408,8 @@ class TicketController extends Controller
                     $recipients->pluck('id')->toArray(),
                     'Tiket Baru: ' . $ticket->code,
                     $ticket->title,
-                    route('tickets.show', $ticket->id)
+                    route('tickets.show', $ticket->id),
+                    'ticket_created'
                 );
             })->afterResponse();
         }
@@ -869,7 +870,8 @@ class TicketController extends Controller
                 $recipients->pluck('id')->toArray(),
                 'Komentar Baru: ' . $ticket->code,
                 'Ada balasan dari ' . $user->name . ': ' . $ticket->title,
-                route('tickets.show', $ticket->id)
+                route('tickets.show', $ticket->id),
+                'ticket_commented'
             );
         }
 

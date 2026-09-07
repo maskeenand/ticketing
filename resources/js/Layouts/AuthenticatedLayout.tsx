@@ -180,7 +180,7 @@ export default function Authenticated({
                         sidebarWidthClass
                     }
                 >
-                    <div className="flex h-28 items-center justify-between gap-3 px-4 border-b border-slate-100">
+                    <div className="flex h-24 items-center justify-center border-b border-slate-100 px-4">
                         <Link
                             href="/"
                             className={
@@ -197,29 +197,6 @@ export default function Authenticated({
                                 }
                             />
                         </Link>
-
-                        <button
-                            type="button"
-                            onClick={() => setSidebarCollapsed((v) => !v)}
-                            className="inline-flex h-11 w-11 items-center justify-center rounded-2xl bg-gradient-to-r from-slate-100 to-slate-50 text-slate-600 hover:from-slate-200 hover:to-slate-100 hover:text-slate-800 hover:scale-110 focus:outline-none transition-all duration-300 shadow-sm"
-                            aria-label="Toggle sidebar"
-                        >
-                            <svg
-                                xmlns="http://www.w3.org/2000/svg"
-                                viewBox="0 0 24 24"
-                                fill="none"
-                                stroke="currentColor"
-                                strokeWidth="2"
-                                strokeLinecap="round"
-                                strokeLinejoin="round"
-                                className={
-                                    'h-6 w-6 transition-all duration-300 ' +
-                                    (sidebarCollapsed ? 'rotate-180' : '')
-                                }
-                            >
-                                <path d="m15 18-6-6 6-6" />
-                            </svg>
-                        </button>
                     </div>
 
                     <div className="px-4 py-6">
@@ -415,8 +392,30 @@ export default function Authenticated({
 
                 <div className="flex min-w-0 flex-1 flex-col">
                     <div className="border-b border-slate-200/70 bg-white/80 backdrop-blur-xl shadow-sm z-40 relative">
-                        <div className="flex h-18 items-center justify-between gap-4 px-6 sm:px-8 lg:px-10">
+                        <div className="flex h-24 items-center justify-between gap-4 px-6 sm:px-8 lg:px-10">
                             <div className="flex items-center gap-3">
+                                <button
+                                    type="button"
+                                    onClick={() => setSidebarCollapsed((v) => !v)}
+                                    className="hidden h-14 w-14 items-center justify-center rounded-2xl border border-slate-200 bg-white text-slate-500 shadow-sm transition-all duration-200 hover:border-slate-300 hover:bg-slate-50 hover:text-slate-700 hover:shadow-md focus:outline-none focus:ring-2 focus:ring-teal-100 md:inline-flex"
+                                    aria-label={sidebarCollapsed ? 'Buka sidebar' : 'Sembunyikan sidebar'}
+                                    title={sidebarCollapsed ? 'Buka menu' : 'Sembunyikan menu'}
+                                >
+                                    <svg
+                                        xmlns="http://www.w3.org/2000/svg"
+                                        viewBox="0 0 24 24"
+                                        fill="none"
+                                        stroke="currentColor"
+                                        strokeWidth="2"
+                                        strokeLinecap="round"
+                                        strokeLinejoin="round"
+                                        className={'h-6 w-6 transition-all duration-300 ' + (sidebarCollapsed ? 'rotate-180' : '')}
+                                    >
+                                        <rect x="4" y="4" width="16" height="16" rx="2" />
+                                        <path d="M9 4v16M14 12l-2-2m2 2-2 2" />
+                                    </svg>
+                                </button>
+
                                 <button
                                     type="button"
                                     onClick={() =>

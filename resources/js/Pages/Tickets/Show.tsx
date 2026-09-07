@@ -138,12 +138,13 @@ export default function TicketShow({ ticket, comments, canEdit, availableAssigne
   const replyContainerRef = useRef<HTMLDivElement | null>(null);
   const currentUserId = auth.user?.id;
 
-  const otherUserStyles = [
-    'bg-slate-50 border-slate-200',
-    'bg-emerald-50 border-emerald-200',
-    'bg-amber-50 border-amber-200',
-    'bg-violet-50 border-violet-200',
-    'bg-rose-50 border-rose-200',
+  const commentStyles = [
+    { bubble: 'bg-rose-50 border-rose-200', avatar: 'bg-rose-100 text-rose-700 ring-rose-200' },
+    { bubble: 'bg-amber-50 border-amber-200', avatar: 'bg-amber-100 text-amber-700 ring-amber-200' },
+    { bubble: 'bg-emerald-50 border-emerald-200', avatar: 'bg-emerald-100 text-emerald-700 ring-emerald-200' },
+    { bubble: 'bg-sky-50 border-sky-200', avatar: 'bg-sky-100 text-sky-700 ring-sky-200' },
+    { bubble: 'bg-violet-50 border-violet-200', avatar: 'bg-violet-100 text-violet-700 ring-violet-200' },
+    { bubble: 'bg-orange-50 border-orange-200', avatar: 'bg-orange-100 text-orange-700 ring-orange-200' },
   ];
 
   const isEditorEmpty = (() => {
@@ -191,7 +192,7 @@ export default function TicketShow({ ticket, comments, canEdit, availableAssigne
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-4">
             <Link
-              href={route('tickets.index', { view_mode: 'client' })}
+              href={route('tickets.index', { view_mode: 'client', view: 'card' })}
               className="inline-flex items-center justify-center rounded-md bg-slate-100 p-2 text-slate-700 hover:bg-slate-200"
               preserveState
             >
@@ -402,33 +403,46 @@ export default function TicketShow({ ticket, comments, canEdit, availableAssigne
           </div>
         </div>
 
-        <div className="mt-6 rounded-lg border border-slate-200 bg-white">
-          <div className="border-b px-6 py-4">
-            <div className="text-xs font-semibold uppercase tracking-wide text-slate-500">Diskusi</div>
+        <div className="mt-6 overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm">
+          <div className="border-b border-slate-200 bg-gradient-to-r from-slate-50 to-white px-6 py-5">
+            <div className="flex items-center justify-between gap-4">
+              <div className="flex items-center gap-3">
+                <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-sky-100 text-sky-700">
+                  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" className="h-5 w-5">
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M7.5 8.25h9m-9 3h5.25M6 19.5l-2.25 1.25.75-3.25A7.5 7.5 0 0 1 4.5 6.75 7.5 7.5 0 0 1 12 3.75a7.5 7.5 0 0 1 7.5 7.5c0 4.142-3.358 7.5-7.5 7.5H6Z" />
+                  </svg>
+                </div>
+                <div>
+                  <div className="text-sm font-bold tracking-tight text-slate-900">Diskusi</div>
+                  <div className="mt-0.5 text-xs text-slate-500">Riwayat komunikasi terkait tiket ini</div>
+                </div>
+              </div>
+              <span className="rounded-full bg-slate-100 px-3 py-1 text-xs font-semibold text-slate-600">
+                {comments.length} {comments.length === 1 ? 'komentar' : 'komentar'}
+              </span>
+            </div>
           </div>
-          <div className="divide-y">
+          <div className="divide-y divide-slate-200 bg-slate-50/60">
             {comments.map((c) => (
               <div
                 key={c.id}
-                className="px-6 py-4 flex"
+                className="relative flex px-4 py-5 sm:px-6"
               >
                 <div
                   className={[
-                    'w-fit max-w-3xl rounded-lg border px-4 py-3',
-                    currentUserId != null && c.user.id === currentUserId ? 'ml-auto bg-sky-100 border-sky-200' : 'mr-auto',
-                    currentUserId != null && c.user.id === currentUserId
-                      ? ''
-                      : otherUserStyles[((c.user.id ?? 0) % otherUserStyles.length + otherUserStyles.length) % otherUserStyles.length],
+                    'w-fit max-w-3xl rounded-2xl border px-4 py-3.5 shadow-sm transition-shadow hover:shadow-md',
+                    currentUserId != null && c.user.id === currentUserId ? 'ml-auto' : 'mr-auto',
+                    commentStyles[((c.user.id ?? 0) % commentStyles.length + commentStyles.length) % commentStyles.length].bubble,
                   ].join(' ')}
                 >
                   <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-slate-600">
                     <div className="inline-flex items-center gap-2">
-                      <span className="inline-flex h-6 w-6 items-center justify-center rounded-full bg-white/70 text-[11px] font-bold text-slate-700 ring-1 ring-black/5">
+                      <span className={`inline-flex h-7 w-7 items-center justify-center rounded-full text-[11px] font-bold shadow-sm ring-1 ${commentStyles[((c.user.id ?? 0) % commentStyles.length + commentStyles.length) % commentStyles.length].avatar}`}>
                         {c.user.name?.slice(0, 1).toUpperCase()}
                       </span>
-                      <span className="font-semibold text-slate-700">{c.user.name}</span>
+                      <span className="font-bold text-slate-800">{c.user.name}</span>
                     </div>
-                    <div className="inline-flex items-center gap-1">
+                    <div className="inline-flex items-center gap-1 text-slate-500">
                       <svg
                         xmlns="http://www.w3.org/2000/svg"
                         viewBox="0 0 24 24"
@@ -445,7 +459,7 @@ export default function TicketShow({ ticket, comments, canEdit, availableAssigne
                       </svg>
                       <span>{formatDateLabel(c.created_at)}</span>
                     </div>
-                    <div className="inline-flex items-center gap-1">
+                    <div className="inline-flex items-center gap-1 text-slate-500">
                       <svg
                         xmlns="http://www.w3.org/2000/svg"
                         viewBox="0 0 24 24"
@@ -468,7 +482,7 @@ export default function TicketShow({ ticket, comments, canEdit, availableAssigne
                     dangerouslySetInnerHTML={{ __html: c.body }}
                   />
                   {normalizeAttachments(c.attachments).length > 0 && (
-                    <div className="mt-3 space-y-2">
+                    <div className="mt-3 space-y-2 border-t border-slate-200/80 pt-3">
                       {normalizeAttachments(c.attachments).map((a, idx) => (
                         <a
                           key={`${idx}-${a.path}`}
@@ -477,11 +491,14 @@ export default function TicketShow({ ticket, comments, canEdit, availableAssigne
                             comment: c.id,
                             index: idx,
                           })}
-                          className="block rounded-md border border-slate-200 bg-white px-3 py-2 text-xs font-semibold text-slate-700 hover:bg-slate-50"
+                          className="flex items-center gap-2 rounded-lg border border-slate-200 bg-white px-3 py-2.5 text-xs font-semibold text-slate-700 transition-colors hover:border-sky-300 hover:bg-sky-50 hover:text-sky-800"
                           target="_blank"
                           rel="noreferrer"
                         >
-                          {a.original_name}
+                          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" className="h-4 w-4 shrink-0 text-sky-600">
+                            <path strokeLinecap="round" strokeLinejoin="round" d="M19.5 14.25v-8.5A2.25 2.25 0 0 0 17.25 3.5h-7.5L5.25 8v8.5a2.25 2.25 0 0 0 2.25 2.25h9.75a2.25 2.25 0 0 0 2.25-2.25ZM9.75 3.75V8.5h-4.5" />
+                          </svg>
+                          <span className="truncate">{a.original_name}</span>
                         </a>
                       ))}
                     </div>
@@ -489,14 +506,27 @@ export default function TicketShow({ ticket, comments, canEdit, availableAssigne
                 </div>
               </div>
             ))}
-            {comments.length === 0 && <div className="px-6 py-6 text-sm text-slate-500">Belum ada komentar.</div>}
+            {comments.length === 0 && (
+              <div className="px-6 py-10 text-center">
+                <div className="mx-auto flex h-11 w-11 items-center justify-center rounded-full bg-slate-100 text-slate-400">
+                  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" className="h-5 w-5">
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M7.5 8.25h9m-9 3h5.25M6 19.5l-2.25 1.25.75-3.25A7.5 7.5 0 0 1 4.5 6.75 7.5 7.5 0 0 1 12 3.75a7.5 7.5 0 0 1 7.5 7.5c0 4.142-3.358 7.5-7.5 7.5H6Z" />
+                  </svg>
+                </div>
+                <div className="mt-3 text-sm font-semibold text-slate-700">Belum ada diskusi</div>
+                <div className="mt-1 text-xs text-slate-500">Jadilah yang pertama memberikan balasan.</div>
+              </div>
+            )}
           </div>
 
-          <form onSubmit={submit} className="border-t px-6 py-5">
-            <div className="text-xs font-semibold uppercase tracking-wide text-slate-500">Tulis Balasan</div>
+          <form onSubmit={submit} className="border-t border-slate-200 bg-white px-4 py-5 sm:px-6">
+            <div className="flex items-center gap-2 text-sm font-bold text-slate-800">
+              <span className="h-2 w-2 rounded-full bg-sky-500" />
+              Tulis Balasan
+            </div>
             <div
               ref={replyContainerRef}
-              className="mt-2 overflow-hidden rounded-md border border-slate-300 shadow-sm focus-within:border-slate-400 focus-within:ring-1 focus-within:ring-slate-400"
+              className="mt-3 overflow-hidden rounded-xl border border-slate-300 shadow-sm transition focus-within:border-sky-400 focus-within:ring-2 focus-within:ring-sky-100"
             >
               <JoditEditor
                 value={data.body}
@@ -504,7 +534,7 @@ export default function TicketShow({ ticket, comments, canEdit, availableAssigne
                 onBlur={(value) => setData('body', value)}
               />
             </div>
-            <div className="mt-4 rounded-md border border-slate-200 bg-white px-3 py-3">
+            <div className="mt-4 rounded-xl border border-dashed border-slate-300 bg-slate-50 px-3 py-3">
               <div className="flex items-center gap-3">
                 <input
                   type="file"
@@ -518,13 +548,13 @@ export default function TicketShow({ ticket, comments, canEdit, availableAssigne
                 />
               </div>
               <div className="mt-2 text-xs text-slate-500">
-                Only jpg, jpeg, png, gif, doc, docx, pdf, xlsx, csv, xls is allowed
+                Format yang didukung: JPG, PNG, GIF, DOC, DOCX, PDF, XLSX, CSV, XLS
               </div>
 
               {data.attachments.length > 0 && (
                 <div className="mt-3 border-t border-slate-100 pt-3">
-                  <div className="text-[10px] font-semibold uppercase tracking-wider text-slate-400">
-                    Selected File
+                    <div className="text-[10px] font-semibold uppercase tracking-wider text-slate-400">
+                    File Terpilih
                   </div>
                   <div className="mt-2 space-y-1 text-sm text-slate-700">
                     {data.attachments.map((f) => (
@@ -541,7 +571,7 @@ export default function TicketShow({ ticket, comments, canEdit, availableAssigne
               <button
                 type="submit"
                 disabled={processing || isEditorEmpty}
-                className="rounded-md bg-sky-700 px-4 py-2 text-sm font-semibold text-white hover:bg-sky-800 disabled:opacity-60 flex items-center gap-2"
+                className="inline-flex items-center gap-2 rounded-lg bg-sky-700 px-4 py-2.5 text-sm font-bold text-white shadow-sm transition hover:bg-sky-800 hover:shadow-md disabled:cursor-not-allowed disabled:opacity-60"
               >
                 {processing ? (
                   <>
@@ -549,10 +579,10 @@ export default function TicketShow({ ticket, comments, canEdit, availableAssigne
                       <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
                       <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
                     </svg>
-                    Saving...
+                    Mengirim...
                   </>
                 ) : (
-                  'Save Reply'
+                  'Kirim Balasan'
                 )}
               </button>
             </div>
@@ -561,7 +591,7 @@ export default function TicketShow({ ticket, comments, canEdit, availableAssigne
 
         <div className="mt-6">
           <Link
-            href={route('tickets.index', { view_mode: 'client' })}
+            href={route('tickets.index', { view_mode: 'client', view: 'card' })}
             className="text-sm font-semibold text-slate-700 hover:text-slate-900"
             preserveState
           >

@@ -26,8 +26,11 @@ self.addEventListener('push', (event) => {
         badge:   data.badge ?? '/icon-192.png',
         tag:     data.url   ?? '/',
         renotify: true,
+        silent:  false,
+        vibrate: [200, 100, 200],
         data: {
             url: data.url ?? '/',
+            type: data.type ?? 'helpdesk',
         },
         actions: [
             { action: 'open',    title: 'Buka Tiket' },

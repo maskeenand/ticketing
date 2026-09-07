@@ -92,7 +92,7 @@ class PushSubscriptionController extends Controller
      *
      * @param array<int> $userIds
      */
-    public static function sendToUsers(array $userIds, string $title, string $body, string $url = '/'): void
+    public static function sendToUsers(array $userIds, string $title, string $body, string $url = '/', string $type = 'helpdesk'): void
     {
         if (empty($userIds)) {
             return;
@@ -110,6 +110,7 @@ class PushSubscriptionController extends Controller
                 'title' => $title,
                 'body'  => $body,
                 'url'   => $url,
+                'type'  => $type,
                 'icon'  => '/logo-ticketing.png',
                 'badge' => '/icon-192.png',
             ]);
