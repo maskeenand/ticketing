@@ -609,6 +609,22 @@ class TicketController extends Controller
         return back()->with('success', "Feedback untuk {$ticket->code} tersimpan.");
     }
 
+    public function destroy(Request $request, Ticket $ticket)
+    {
+        $user = $request->user();
+        if ($user === null || ! $this->canDeleteTicket($user, $ticket)) {
+            abort(403);
+        }
+
+        $disk = (string) config('filesystems.default', 'local');
+        Storage::disk($disk)->deleteDirectory("tickets/{$ticket->id}");
+        $ticket->delete();
+
+        return redirect()
+            ->route('tickets.index')
+            ->with('success', "Ticket {$ticket->code} berhasil dihapus.");
+    }
+
     public function show(Request $request, Ticket $ticket)
     {
         $user = $request->user();
@@ -665,8 +681,15 @@ class TicketController extends Controller
                 'created_at' => $c->created_at?->toISOString(),
             ]),
             'canEdit' => $canEdit,
+            'canDelete' => $this->canDeleteTicket($user, $ticket),
+            'canDeleteAttachment' => (int) $ticket->creator_id === (int) $user->id,
             'availableAssignees' => $availableAssignees,
         ]);
+    }
+
+    private function canDeleteTicket(User $user, Ticket $ticket): bool
+    {
+        return (int) $ticket->creator_id === (int) $user->id && $ticket->assignee_id === null;
     }
 
     public function downloadAttachment(Request $request, Ticket $ticket, int $index)
@@ -717,6 +740,34 @@ class TicketController extends Controller
             'Content-Type' => $mime,
             'Content-Disposition' => 'inline; filename="' . $safeFileName . '"',
         ]));
+    }
+
+    public function deleteAttachment(Request $request, Ticket $ticket, int $index)
+    {
+        $user = $request->user();
+        if ($user === null || (int) $ticket->creator_id !== (int) $user->id) {
+            abort(403);
+        }
+
+        $attachments = $ticket->attachments;
+        if (! is_array($attachments) || ! array_key_exists($index, $attachments)) {
+            abort(404);
+        }
+
+        $attachment = $attachments[$index];
+        if (! is_array($attachment)) {
+            abort(404);
+        }
+
+        $path = $attachment['path'] ?? null;
+        if (is_string($path) && str_starts_with($path, "tickets/{$ticket->id}/")) {
+            Storage::disk((string) config('filesystems.default', 'local'))->delete($path);
+        }
+
+        array_splice($attachments, $index, 1);
+        $ticket->update(['attachments' => array_values($attachments) ?: null]);
+
+        return back()->with('success', 'Attachment berhasil dihapus.');
     }
 
     public function downloadCommentAttachment(Request $request, Ticket $ticket, TicketComment $comment, int $index)
@@ -777,7 +828,7 @@ class TicketController extends Controller
     {
         $validated = $request->validate([
             'body' => ['required', 'string', 'max:5000'],
-            'attachments' => ['nullable', 'array', 'max:5'],
+            'attachments' => ['nullable', 'array', 'max:10'],
             'attachments.*' => [
                 'file',
                 'max:5120',

@@ -147,14 +147,14 @@ export default function TicketsCreate({ projects }: Props) {
                                                 multiple
                                                 accept=".jpg,.jpeg,.png,.gif,.doc,.docx,.pdf,.xlsx,.csv,.xls"
                                                 onChange={(e) => {
-                                                    const files = Array.from(e.target.files ?? []);
+                                                    const files = Array.from(e.target.files ?? []).slice(0, 10);
                                                     setData('attachments', files);
                                                 }}
                                                 className="block w-full text-sm text-slate-700 file:mr-4 file:rounded-md file:border-0 file:bg-slate-100 file:px-4 file:py-2 file:text-sm file:font-semibold file:text-slate-700 hover:file:bg-slate-200"
                                             />
                                         </div>
                                         <div className="mt-2 text-xs text-slate-500">
-                                            Only jpg, jpeg, png, gif, doc, docx, pdf, xlsx, csv, xls is allowed
+                                            Maksimal 10 file. Only jpg, jpeg, png, gif, doc, docx, pdf, xlsx, csv, xls is allowed
                                         </div>
 
                                         {data.attachments.length > 0 && (

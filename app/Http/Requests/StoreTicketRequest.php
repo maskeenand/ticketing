@@ -34,7 +34,7 @@ class StoreTicketRequest extends FormRequest
             'description' => ['nullable', 'string'],
             'category' => ['required', 'in:IT,IPSRS'],
             'type' => ['nullable', 'string', 'max:100'],
-            'attachments' => ['nullable', 'array', 'max:5'],
+            'attachments' => ['nullable', 'array', 'max:10'],
             'attachments.*' => [
                 'file',
                 'max:5120',

@@ -256,6 +256,9 @@ Route::middleware('auth')->group(function () {
     Route::get('/tickets/{ticket}/attachments/{index}', [TicketController::class, 'downloadAttachment'])
         ->whereNumber('index')
         ->name('tickets.attachments.download');
+    Route::delete('/tickets/{ticket}/attachments/{index}', [TicketController::class, 'deleteAttachment'])
+        ->whereNumber('index')
+        ->name('tickets.attachments.destroy');
     Route::get('/tickets/{ticket}/comments/{comment}/attachments/{index}', [TicketController::class, 'downloadCommentAttachment'])
         ->whereNumber('index')
         ->name('tickets.comments.attachments.download');
@@ -264,6 +267,7 @@ Route::middleware('auth')->group(function () {
     Route::post('/tickets/{ticket}/assign', [TicketController::class, 'assign'])->name('tickets.assign');
     Route::patch('/tickets/{ticket}/status', [TicketController::class, 'updateStatus'])->name('tickets.status');
     Route::post('/tickets/{ticket}/feedback', [TicketController::class, 'feedback'])->name('tickets.feedback');
+    Route::delete('/tickets/{ticket}', [TicketController::class, 'destroy'])->name('tickets.destroy');
     Route::get('/tickets/export', [TicketController::class, 'export'])->name('tickets.export');
 
     // Web Push Subscriptions

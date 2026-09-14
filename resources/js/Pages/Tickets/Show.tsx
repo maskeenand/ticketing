@@ -46,6 +46,8 @@ type Props = PageProps<{
     ticket: Ticket;
     comments: Comment[];
     canEdit: boolean;
+    canDelete: boolean;
+    canDeleteAttachment: boolean;
     availableAssignees: { id: number; name: string }[];
 }>;
 
@@ -124,7 +126,7 @@ function formatDateLabel(dateIso: string): string {
   return date.toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' });
 }
 
-export default function TicketShow({ ticket, comments, canEdit, availableAssignees }: Props) {
+export default function TicketShow({ ticket, comments, canEdit, canDelete, canDeleteAttachment, availableAssignees }: Props) {
   const { auth } = usePage<PageProps>().props;
   const { data, setData, post, patch, processing, reset } = useForm({
     body: '',
@@ -239,6 +241,19 @@ export default function TicketShow({ ticket, comments, canEdit, availableAssigne
           </div>
           </div>
           <div className="flex items-center gap-2">
+            {canDelete && (
+              <button
+                type="button"
+                onClick={() => {
+                  if (window.confirm('Hapus tiket ini?')) {
+                    router.delete(route('tickets.destroy', ticket.id));
+                  }
+                }}
+                className="rounded-md bg-rose-100 px-3 py-1.5 text-xs font-semibold text-rose-700 hover:bg-rose-200"
+              >
+                Hapus Tiket
+              </button>
+            )}
             {ticket.type && (
               <div className="rounded bg-slate-100 px-3 py-1.5 text-xs font-semibold text-slate-700">
                 {ticket.type}
@@ -387,15 +402,31 @@ export default function TicketShow({ ticket, comments, canEdit, availableAssigne
               ) : (
                 <div className="mt-2 space-y-2">
                   {attachments.map((a, idx) => (
-                    <a
-                      key={`${idx}-${a.path}`}
-                      href={route('tickets.attachments.download', { ticket: ticket.id, index: idx })}
-                      className="block rounded-md border border-slate-200 bg-slate-50 px-3 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-100"
-                      target="_blank"
-                      rel="noreferrer"
-                    >
-                      {a.original_name}
-                    </a>
+                    <div key={`${idx}-${a.path}`} className="flex items-center gap-2">
+                      <a
+                        href={route('tickets.attachments.download', { ticket: ticket.id, index: idx })}
+                        className="min-w-0 flex-1 truncate rounded-md border border-slate-200 bg-slate-50 px-3 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-100"
+                        target="_blank"
+                        rel="noreferrer"
+                      >
+                        {a.original_name}
+                      </a>
+                      {canDeleteAttachment && (
+                        <button
+                          type="button"
+                          onClick={() => {
+                            if (window.confirm(`Hapus attachment "${a.original_name}"?`)) {
+                              router.delete(route('tickets.attachments.destroy', { ticket: ticket.id, index: idx }), {
+                                preserveScroll: true,
+                              });
+                            }
+                          }}
+                          className="shrink-0 rounded-md bg-rose-100 px-3 py-2 text-xs font-semibold text-rose-700 hover:bg-rose-200"
+                        >
+                          Hapus
+                        </button>
+                      )}
+                    </div>
                   ))}
                 </div>
               )}
@@ -541,14 +572,14 @@ export default function TicketShow({ ticket, comments, canEdit, availableAssigne
                   multiple
                   accept=".jpg,.jpeg,.png,.gif,.doc,.docx,.pdf,.xlsx,.csv,.xls"
                   onChange={(e) => {
-                    const files = Array.from(e.target.files ?? []);
+                    const files = Array.from(e.target.files ?? []).slice(0, 10);
                     setData('attachments', files);
                   }}
                   className="block w-full text-sm text-slate-700 file:mr-4 file:rounded-md file:border-0 file:bg-slate-100 file:px-4 file:py-2 file:text-sm file:font-semibold file:text-slate-700 hover:file:bg-slate-200"
                 />
               </div>
               <div className="mt-2 text-xs text-slate-500">
-                Format yang didukung: JPG, PNG, GIF, DOC, DOCX, PDF, XLSX, CSV, XLS
+                Maksimal 10 file. Format yang didukung: JPG, PNG, GIF, DOC, DOCX, PDF, XLSX, CSV, XLS
               </div>
 
               {data.attachments.length > 0 && (
