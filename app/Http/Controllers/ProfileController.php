@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Http\Requests\ProfileUpdateRequest;
+use App\Jobs\SendTelegramNotificationJob;
 use Illuminate\Contracts\Auth\MustVerifyEmail;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -62,6 +63,57 @@ class ProfileController extends Controller
         $user->update(['avatar' => $path]);
 
         return Redirect::route('profile.edit')->with('status', 'avatar-updated');
+    }
+
+    public function connectTelegram(Request $request): RedirectResponse
+    {
+        abort_unless($request->user()?->role === 'admin', 403);
+
+        $data = $request->validate([
+            'telegram_chat_id' => ['nullable', 'string', 'max:50'],
+            'telegram_username' => ['nullable', 'string', 'max:100'],
+        ]);
+
+        $user = $request->user();
+
+        $user->update([
+            'telegram_chat_id' => trim((string) ($data['telegram_chat_id'] ?? '')) ?: null,
+            'telegram_username' => trim((string) ($data['telegram_username'] ?? '')) ?: null,
+        ]);
+
+        return Redirect::route('profile.edit')->with('status', 'telegram-connected');
+    }
+
+    public function testTelegram(Request $request): RedirectResponse
+    {
+        abort_unless($request->user()?->role === 'admin', 403);
+
+        $user = $request->user();
+        $chatId = trim((string) $request->input('telegram_chat_id', ''));
+
+        if ($chatId !== '' && ! preg_match('/^-?\d+$/', $chatId)) {
+            return Redirect::route('profile.edit')->withErrors([
+                'telegram_chat_id' => 'Chat ID harus berupa angka, bukan username seperti @nama_user.',
+            ]);
+        }
+
+        if ($chatId !== '') {
+            $user->update(['telegram_chat_id' => $chatId]);
+        }
+
+        if (empty($user->telegram_chat_id)) {
+            return Redirect::route('profile.edit')->withErrors([
+                'telegram_chat_id' => 'Chat ID Telegram belum diisi.',
+            ]);
+        }
+
+        SendTelegramNotificationJob::dispatchSync(
+            $user,
+            'telegram_test',
+            null,
+        );
+
+        return Redirect::route('profile.edit')->with('status', 'telegram-test-sent');
     }
 
     /**

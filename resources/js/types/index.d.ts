@@ -9,6 +9,8 @@ export interface User {
     role?: string | null;
     avatar?: string | null;
     avatar_url?: string | null;
+    telegram_chat_id?: string | null;
+    telegram_username?: string | null;
 }
 
 export type PageProps<

@@ -3,6 +3,10 @@
 namespace App\Http\Controllers;
 
 use App\Http\Requests\StoreTicketRequest;
+use App\Events\TicketAssigned;
+use App\Events\TicketCommented as TicketCommentedEvent;
+use App\Events\TicketResolved;
+use App\Events\TicketStatusUpdated;
 use App\Models\Project;
 use App\Models\Ticket;
 use App\Models\TicketComment;
@@ -381,12 +385,13 @@ class TicketController extends Controller
 
         if ($recipientIds->isNotEmpty()) {
             $recipients = User::query()->whereIn('id', $recipientIds)->get();
-            // Send notifications after response to make it feel faster
+
+            event(new TicketCreated($ticket, $user));
+
             dispatch(function () use ($recipients, $ticket, $user) {
                 foreach ($recipients as $recipient) {
                     try {
                         \Illuminate\Support\Facades\Notification::send([$recipient], new TicketCreated($ticket, $user));
-                        // Mark sent after successful send
                         \App\Models\EmailLog::where('recipient_email', $recipient->email)
                             ->where('status', 'pending')
                             ->where('ticket_id', $ticket->id)
@@ -403,7 +408,6 @@ class TicketController extends Controller
                     }
                 }
 
-                // Send web push to all recipients at once
                 \App\Http\Controllers\PushSubscriptionController::sendToUsers(
                     $recipients->pluck('id')->toArray(),
                     'Tiket Baru: ' . $ticket->code,
@@ -441,6 +445,8 @@ class TicketController extends Controller
             'assignee_id' => $user->id,
             'status' => $ticket->status === 'open' ? 'in_progress' : $ticket->status,
         ]);
+
+        event(new TicketAssigned($ticket->fresh(), $user));
 
         return back()->with('success', "Ticket {$ticket->code} berhasil di-claim.");
     }
@@ -490,6 +496,8 @@ class TicketController extends Controller
         $ticket->update([
             'assignee_id' => $assignee->id,
         ]);
+
+        event(new TicketAssigned($ticket->fresh(), $user));
 
         return back()->with('success', "Ticket {$ticket->code} berhasil di-assign ke {$assignee->name}.");
     }
@@ -550,6 +558,11 @@ class TicketController extends Controller
                 $ticket->update($updates);
             });
 
+            $updatedTicket = $ticket->fresh();
+            event($nextStatus === 'resolved'
+                ? new TicketResolved($updatedTicket, $user)
+                : new TicketStatusUpdated($updatedTicket, $user));
+
             return back()->with('success', "Ticket {$ticket->code} diupdate.");
         }
 
@@ -585,6 +598,11 @@ class TicketController extends Controller
 
             $ticket->update($updates);
         });
+
+        $updatedTicket = $ticket->fresh();
+        event($nextStatus === 'resolved'
+            ? new TicketResolved($updatedTicket, $user)
+            : new TicketStatusUpdated($updatedTicket, $user));
 
         return back()->with('success', "Ticket {$ticket->code} diupdate.");
     }
@@ -886,6 +904,8 @@ class TicketController extends Controller
             'attachments' => $attachments !== [] ? $attachments : null,
         ]);
 
+        event(new TicketCommentedEvent($ticket->fresh(), $user));
+
         $recipientIds = collect([$ticket->requester_id, $ticket->creator_id, $ticket->assignee_id])
             ->filter()
             ->map(fn ($id) => (int) $id);
@@ -1179,6 +1199,34 @@ class TicketController extends Controller
 
     private function ensureCanViewTicket(User $user, Ticket $ticket): void
     {
+        // A notification recipient is allowed to open the ticket it references,
+        // including legacy tickets whose unit/project data is incomplete.
+        if ($user->notifications()
+            ->whereJsonContains('data->ticket_id', $ticket->id)
+            ->exists()) {
+            return;
+        }
+
+        // Members of the same unit may view each other's tickets, regardless of
+        // which team/category handled the ticket.
+        if ($user->unit_id) {
+            if ((int) $ticket->project_id === (int) $user->unit_id) {
+                return;
+            }
+
+            $createdBySameUnit = User::query()
+                ->where('unit_id', $user->unit_id)
+                ->where(function ($query) use ($ticket) {
+                    $query->whereKey($ticket->requester_id)
+                        ->orWhereKey($ticket->creator_id);
+                })
+                ->exists();
+
+            if ($createdBySameUnit) {
+                return;
+            }
+        }
+
         $staffTeam = $this->getStaffTeam($user);
         if ($staffTeam) {
             // Staf bisa akses tiket kategorinya ATAU tiket yang mereka buat/request sendiri
@@ -1218,11 +1266,7 @@ class TicketController extends Controller
         }
 
         if ($user->unit_id) {
-            if ((int) $ticket->project_id !== (int) $user->unit_id) {
-                abort(403);
-            }
-
-            return;
+            abort(403);
         }
 
         if ((int) $ticket->requester_id !== (int) $user->id) {

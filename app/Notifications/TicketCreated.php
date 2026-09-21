@@ -37,6 +37,7 @@ class TicketCreated extends Notification
             'ticket_code'  => $this->ticket->code,
             'ticket_title' => $this->ticket->title,
             'actor_name'   => $this->actor->name,
+            'url'          => route('tickets.show', $this->ticket->id),
         ];
     }
 

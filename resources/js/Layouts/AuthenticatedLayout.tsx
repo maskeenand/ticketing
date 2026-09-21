@@ -20,10 +20,6 @@ export default function Authenticated({
     const notifications = page.props.notifications;
     const unreadCount = notifications?.unread_count ?? 0;
     const notificationItems = notifications?.items ?? [];
-    const [soundEnabled, setSoundEnabled] = useState(() => {
-        const saved = localStorage.getItem('notificationSoundEnabled');
-        return saved !== 'false';
-    });
     const previousUnreadCountRef = useRef(unreadCount);
     const [showToast, setShowToast] = useState(false);
     const [toastMessage, setToastMessage] = useState('');
@@ -41,15 +37,8 @@ export default function Authenticated({
     }, []);
 
     useEffect(() => {
-        localStorage.setItem('notificationSoundEnabled', String(soundEnabled));
-    }, [soundEnabled]);
-
-    useEffect(() => {
         if (unreadCount > previousUnreadCountRef.current && previousUnreadCountRef.current !== undefined) {
-            // Play sound if enabled
-            if (soundEnabled) {
-                playNotificationSound();
-            }
+            playNotificationSound();
             
             // Show toast for new notification
             const newNotification = notificationItems.find(n => !n.read_at);
@@ -69,7 +58,7 @@ export default function Authenticated({
             }
         }
         previousUnreadCountRef.current = unreadCount;
-    }, [unreadCount, soundEnabled, notificationItems]);
+    }, [unreadCount, notificationItems]);
 
     const [showingNavigationDropdown, setShowingNavigationDropdown] =
         useState(false);
@@ -464,44 +453,6 @@ export default function Authenticated({
                             </div>
 
                             <div className="flex items-center gap-4">
-                                <button
-                                    type="button"
-                                    onClick={() => setSoundEnabled(!soundEnabled)}
-                                    className="inline-flex h-12 w-12 items-center justify-center rounded-2xl bg-gradient-to-r from-slate-100 to-slate-50 text-slate-600 hover:from-slate-200 hover:to-slate-100 hover:text-slate-800 hover:scale-110 focus:outline-none transition-all duration-300 shadow-sm"
-                                    title={soundEnabled ? 'Matikan suara notifikasi' : 'Aktifkan suara notifikasi'}
-                                >
-                                    {soundEnabled ? (
-                                        <svg
-                                            xmlns="http://www.w3.org/2000/svg"
-                                            fill="none"
-                                            viewBox="0 0 24 24"
-                                            strokeWidth="2"
-                                            stroke="currentColor"
-                                            strokeLinecap="round"
-                                            strokeLinejoin="round"
-                                            className="h-6 w-6 text-teal-600"
-                                        >
-                                            <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5" />
-                                            <path d="M19.07 4.93a10 10 0 0 1 0 14.14M15.54 8.46a5 5 0 0 1 0 7.07" />
-                                        </svg>
-                                    ) : (
-                                        <svg
-                                            xmlns="http://www.w3.org/2000/svg"
-                                            fill="none"
-                                            viewBox="0 0 24 24"
-                                            strokeWidth="2"
-                                            stroke="currentColor"
-                                            strokeLinecap="round"
-                                            strokeLinejoin="round"
-                                            className="h-6 w-6 text-slate-500"
-                                        >
-                                            <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5" />
-                                            <line x1="22" x2="16" y1="9" y2="15" />
-                                            <line x1="16" x2="22" y1="9" y2="15" />
-                                        </svg>
-                                    )}
-                                </button>
-
                                 {/* Push Notification Toggle */}
                                 {permission !== 'unsupported' && (
                                     <button

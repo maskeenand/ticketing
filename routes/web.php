@@ -243,6 +243,8 @@ Route::middleware('auth')->group(function () {
     Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
     Route::patch('/profile', [ProfileController::class, 'update'])->name('profile.update');
     Route::post('/profile/avatar', [ProfileController::class, 'uploadAvatar'])->name('profile.avatar');
+    Route::post('/profile/telegram/connect', [ProfileController::class, 'connectTelegram'])->name('profile.telegram.connect');
+    Route::post('/profile/telegram/test', [ProfileController::class, 'testTelegram'])->name('profile.telegram.test');
     Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
 
     Route::get('/change-password', [\App\Http\Controllers\PasswordChangeController::class, 'show'])->name('password.change');
@@ -289,7 +291,14 @@ Route::middleware('auth')->group(function () {
         $n = $user->notifications()->whereKey($notification)->firstOrFail();
         $n->markAsRead();
 
-        $url = is_array($n->data) ? ($n->data['url'] ?? null) : null;
+        $data = is_array($n->data) ? $n->data : [];
+        $url = $data['url'] ?? null;
+
+        if ((! is_string($url) || $url === '') && ! empty($data['ticket_id'])) {
+            $ticket = \App\Models\Ticket::find($data['ticket_id']);
+            $url = $ticket ? route('tickets.show', $ticket->id) : null;
+        }
+
         if (! is_string($url) || $url === '') {
             $url = route('dashboard');
         }

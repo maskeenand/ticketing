@@ -25,6 +25,8 @@ class User extends Authenticatable
         'username',
         'employee_id',
         'email',
+        'telegram_chat_id',
+        'telegram_username',
         'password',
         'unit_id',
         'team',
@@ -98,5 +100,15 @@ class User extends Authenticatable
     public function subordinates(): HasMany
     {
         return $this->hasMany(User::class, 'supervisor_id');
+    }
+
+    public function notificationPreference()
+    {
+        return $this->hasOne(UserNotificationPreference::class);
+    }
+
+    public function notificationLogs(): HasMany
+    {
+        return $this->hasMany(NotificationLog::class);
     }
 }

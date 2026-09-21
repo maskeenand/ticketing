@@ -6,6 +6,13 @@ import { Transition } from '@headlessui/react';
 import { Link, router, useForm, usePage } from '@inertiajs/react';
 import { FormEventHandler, useRef, useState } from 'react';
 
+type ProfileFormData = {
+    name: string;
+    email: string;
+    telegram_chat_id: string;
+    telegram_username: string;
+};
+
 export default function UpdateProfileInformation({
     mustVerifyEmail,
     status,
@@ -16,11 +23,14 @@ export default function UpdateProfileInformation({
     className?: string;
 }) {
     const user = usePage().props.auth.user;
+    const isAdmin = user.role === 'admin';
 
     const { data, setData, patch, errors, processing, recentlySuccessful } =
-        useForm({
+        useForm<ProfileFormData>({
             name: user.name,
             email: user.email,
+            telegram_chat_id: user.telegram_chat_id ?? '',
+            telegram_username: user.telegram_username ?? '',
         });
 
     const fileInputRef = useRef<HTMLInputElement>(null);
@@ -69,6 +79,21 @@ export default function UpdateProfileInformation({
     const submit: FormEventHandler = (e) => {
         e.preventDefault();
         patch(route('profile.update'));
+    };
+
+    const submitTelegram: FormEventHandler = (e) => {
+        e.preventDefault();
+        router.post(route('profile.telegram.connect'), {
+            telegram_chat_id: data.telegram_chat_id,
+            telegram_username: data.telegram_username,
+        });
+    };
+
+    const testTelegram: FormEventHandler = (e) => {
+        e.preventDefault();
+        router.post(route('profile.telegram.test'), {
+            telegram_chat_id: data.telegram_chat_id,
+        });
     };
 
     const displayAvatar = previewUrl ?? avatarUrl;
@@ -223,6 +248,80 @@ export default function UpdateProfileInformation({
                     </Transition>
                 </div>
             </form>
+
+            {isAdmin && (
+            <div className="mt-8 rounded-xl border border-slate-200 bg-slate-50 p-5">
+                <div className="flex items-center justify-between gap-4">
+                    <div>
+                        <h3 className="text-lg font-semibold text-slate-900">Telegram Notification</h3>
+                        <p className="text-sm text-slate-600">
+                            {user.telegram_chat_id
+                                ? 'Akun Telegram Anda sudah terhubung.'
+                                : 'Hubungkan Telegram untuk menerima notifikasi tiket.'}
+                        </p>
+                    </div>
+                    <span className={`inline-flex rounded-full px-2.5 py-1 text-xs font-semibold ${user.telegram_chat_id ? 'bg-green-100 text-green-700' : 'bg-yellow-100 text-yellow-700'}`}>
+                        {user.telegram_chat_id ? 'Terhubung' : 'Belum terhubung'}
+                    </span>
+                </div>
+
+                <div className="mt-4 space-y-4">
+                    <div>
+                        <InputLabel htmlFor="telegram_chat_id" value="Chat ID Telegram" />
+                        <TextInput
+                            id="telegram_chat_id"
+                            type="text"
+                            value={data.telegram_chat_id}
+                            onChange={(e) => setData('telegram_chat_id', e.target.value)}
+                            className="mt-1 block w-full"
+                            placeholder="Contoh: 123456789"
+                        />
+                        <InputError className="mt-2" message={errors.telegram_chat_id} />
+                        <p className="mt-1 text-xs text-slate-500">
+                            Isi angka Chat ID dari bot Telegram, bukan username @nama.
+                        </p>
+                    </div>
+
+                    <div>
+                        <InputLabel htmlFor="telegram_username" value="Username Telegram" />
+                        <TextInput
+                            id="telegram_username"
+                            type="text"
+                            value={data.telegram_username}
+                            onChange={(e) => setData('telegram_username', e.target.value)}
+                            className="mt-1 block w-full"
+                            placeholder="Contoh: @nama_user"
+                        />
+                    </div>
+
+                    <div className="flex flex-wrap items-center gap-3">
+                        <button
+                            type="button"
+                            onClick={submitTelegram}
+                            className="rounded-lg bg-teal-600 px-4 py-2 text-sm font-semibold text-white hover:bg-teal-700"
+                        >
+                            Hubungkan Telegram
+                        </button>
+
+                        <button
+                            type="button"
+                            onClick={testTelegram}
+                            className="rounded-lg border border-slate-300 bg-white px-4 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-100"
+                        >
+                            Test Telegram
+                        </button>
+                    </div>
+
+                    {status === 'telegram-connected' && (
+                        <p className="text-sm font-medium text-green-600">Telegram berhasil disimpan.</p>
+                    )}
+
+                    {status === 'telegram-test-sent' && (
+                        <p className="text-sm font-medium text-green-600">Pesan test Telegram sedang dikirim.</p>
+                    )}
+                </div>
+            </div>
+            )}
         </section>
     );
 }
