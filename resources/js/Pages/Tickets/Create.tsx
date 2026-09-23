@@ -14,12 +14,20 @@ type Project = {
     name: string;
 };
 
+type TicketFormData = {
+    title: string;
+    project_id: string;
+    category: string;
+    description: string;
+    attachments: File[];
+};
+
 type Props = PageProps<{
     projects: Project[];
 }>;
 
 export default function TicketsCreate({ projects }: Props) {
-    const { data, setData, post, processing, errors } = useForm({
+    const { data, setData, post, processing, errors } = useForm<TicketFormData>({
         title: '',
         project_id: '',
         category: '',

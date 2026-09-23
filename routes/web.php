@@ -268,6 +268,7 @@ Route::middleware('auth')->group(function () {
     Route::post('/tickets/{ticket}/claim', [TicketController::class, 'claim'])->name('tickets.claim');
     Route::post('/tickets/{ticket}/assign', [TicketController::class, 'assign'])->name('tickets.assign');
     Route::patch('/tickets/{ticket}/status', [TicketController::class, 'updateStatus'])->name('tickets.status');
+    Route::patch('/tickets/{ticket}/tags', [TicketController::class, 'updateTags'])->name('tickets.tags');
     Route::post('/tickets/{ticket}/feedback', [TicketController::class, 'feedback'])->name('tickets.feedback');
     Route::delete('/tickets/{ticket}', [TicketController::class, 'destroy'])->name('tickets.destroy');
     Route::get('/tickets/export', [TicketController::class, 'export'])->name('tickets.export');

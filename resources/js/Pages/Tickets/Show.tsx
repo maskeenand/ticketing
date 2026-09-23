@@ -1,7 +1,7 @@
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
 import { Head, Link, router, useForm, usePage } from '@inertiajs/react';
 import JoditEditor from 'jodit-react';
-import { FormEvent, useEffect, useMemo, useRef } from 'react';
+import { FormEvent, useEffect, useMemo, useRef, useState } from 'react';
 import { PageProps } from '@/types';
 import { playSuccessSound } from '@/utils/soundNotification';
 
@@ -19,6 +19,7 @@ type Ticket = {
   priority: 'low' | 'medium' | 'high';
   category?: string | null;
   type?: string | null;
+  tags?: string[];
   created_at: string;
   project: Project | null;
   requester?: Person | null;
@@ -134,11 +135,32 @@ export default function TicketShow({ ticket, comments, canEdit, canDelete, canDe
     status: ticket.status,
     priority: ticket.priority,
     type: ticket.type,
+    tags: ticket.tags?.join(', ') ?? '',
     assignee_id: ticket.assignee?.id ?? null,
   });
+  const [tagInput, setTagInput] = useState('');
+  const [tags, setTags] = useState<string[]>(ticket.tags ?? []);
   const attachments = normalizeAttachments(ticket.attachments);
   const replyContainerRef = useRef<HTMLDivElement | null>(null);
   const currentUserId = auth.user?.id;
+
+  const addTag = (value: string) => {
+    const tag = value.trim();
+    if (!tag) return;
+    const normalizedTag = `#${tag.replace(/^#+/, '')}`;
+    if (!tags.some((existingTag) => existingTag.toLowerCase() === normalizedTag.toLowerCase())) {
+      const nextTags = [...tags, normalizedTag];
+      setTags(nextTags);
+      router.patch(route('tickets.tags', ticket.id), { tags: nextTags.join(', ') }, { preserveScroll: true });
+    }
+    setTagInput('');
+  };
+
+  const removeTag = (tag: string) => {
+    const nextTags = tags.filter((item) => item !== tag);
+    setTags(nextTags);
+    router.patch(route('tickets.tags', ticket.id), { tags: nextTags.join(', ') }, { preserveScroll: true });
+  };
 
   const commentStyles = [
     { bubble: 'bg-rose-50 border-rose-200', avatar: 'bg-rose-100 text-rose-700 ring-rose-200' },
@@ -232,6 +254,16 @@ export default function TicketShow({ ticket, comments, canEdit, canDelete, canDe
               {ticket.type && (
                 <span className="rounded bg-slate-100 px-2 py-1 text-slate-700">
                   {ticket.type}
+                </span>
+              )}
+              {ticket.tags?.map((tag) => (
+                <span key={tag} className="rounded-full bg-teal-50 px-2.5 py-1 text-teal-700">
+                  {tag}
+                </span>
+              ))}
+              {(!ticket.tags || ticket.tags.length === 0) && (
+                <span className="rounded bg-slate-50 px-2 py-1 text-slate-400">
+                  Belum ada tag
                 </span>
               )}
               <span className={`rounded px-2 py-1 ${priorityBadgeClass(ticket.priority)}`}>
@@ -370,6 +402,59 @@ export default function TicketShow({ ticket, comments, canEdit, canDelete, canDe
                     <option key={user.id} value={user.id}>{user.name}</option>
                   ))}
                 </select>
+              </div>
+              <div className="md:col-span-2">
+                <label className="block text-xs font-semibold text-slate-700 mb-2">Tags</label>
+                <div className="flex flex-wrap items-center gap-2 rounded-md border border-slate-300 px-3 py-2 focus-within:border-slate-400 focus-within:ring-1 focus-within:ring-slate-400">
+                  {tags.map((tag) => (
+                    <span key={tag} className="inline-flex items-center gap-1 rounded-full bg-teal-100 px-2.5 py-1 text-xs font-semibold text-teal-800">
+                      {tag}
+                      <button
+                        type="button"
+                        onClick={() => removeTag(tag)}
+                        className="text-teal-600 hover:text-teal-900"
+                        aria-label={`Hapus ${tag}`}
+                      >
+                        &times;
+                      </button>
+                    </span>
+                  ))}
+                  <input
+                    type="text"
+                    value={tagInput}
+                    onChange={(e) => {
+                      const value = e.target.value;
+                      if (value.includes(',')) {
+                        const parts = value.split(',');
+                        const completedTags = parts
+                          .slice(0, -1)
+                          .map((part) => part.trim())
+                          .filter(Boolean)
+                          .map((part) => `#${part.replace(/^#+/, '')}`);
+                        const nextTags = [...tags];
+                        completedTags.forEach((tag) => {
+                          if (!nextTags.some((existingTag) => existingTag.toLowerCase() === tag.toLowerCase())) {
+                            nextTags.push(tag);
+                          }
+                        });
+                        setTags(nextTags);
+                        router.patch(route('tickets.tags', ticket.id), { tags: nextTags.join(', ') }, { preserveScroll: true });
+                        setTagInput(parts.at(-1)?.trim() ?? '');
+                      } else {
+                        setTagInput(value);
+                      }
+                    }}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter') {
+                        e.preventDefault();
+                        addTag(tagInput);
+                      }
+                    }}
+                    placeholder={tags.length === 0 ? '#SIMRS, #Printer' : 'Tambah tag...'}
+                    className="min-w-[180px] flex-1 border-0 p-0 text-sm focus:ring-0"
+                  />
+                </div>
+                <p className="mt-1 text-xs text-slate-500">Tag tersimpan otomatis saat ditambah atau dihapus.</p>
               </div>
             </div>
           </div>

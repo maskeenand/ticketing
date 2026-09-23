@@ -31,6 +31,7 @@ type Ticket = {
     assignee?: Person | null;
     category?: string | null;
     type?: string | null;
+    tags?: string[];
     last_replied_by?: string | null;
     last_replied_at?: string | null;
     feedback_rating?: number | null;
@@ -874,6 +875,15 @@ export default function TicketsIndex(props: Props) {
                                                                             >
                                                                                 {t.title}
                                                                             </Link>
+                                                                            {t.tags && t.tags.length > 0 && (
+                                                                                <div className="mt-2 flex flex-wrap gap-1">
+                                                                                    {t.tags.map((tag) => (
+                                                                                        <span key={tag} className="rounded-full bg-teal-50 px-2 py-0.5 text-[11px] font-semibold text-teal-700">
+                                                                                            {tag}
+                                                                                        </span>
+                                                                                    ))}
+                                                                                </div>
+                                                                            )}
                                                                         </td>
                                                                         <td className="whitespace-nowrap px-3 py-3">
                                                                             <div className="flex flex-wrap gap-2">
@@ -1019,7 +1029,7 @@ export default function TicketsIndex(props: Props) {
                                         className="relative overflow-hidden rounded-lg border border-slate-200 bg-white shadow-sm"
                                     >
                                         <div className="flex items-start justify-between px-4 pt-4">
-                                            <div>
+                                            <div className="flex items-center gap-2">
                                                 <div
                                                     className={
                                                         'rounded-md px-3 py-1.5 text-xs font-semibold ' +
@@ -1028,6 +1038,13 @@ export default function TicketsIndex(props: Props) {
                                                 >
                                                     {statusLabel(t.status)}
                                                 </div>
+                                                {t.category && (
+                                                    <span className={`rounded px-3 py-1.5 text-xs font-semibold text-white ${
+                                                        t.category === 'IT' ? 'bg-blue-500' : 'bg-amber-500'
+                                                    }`}>
+                                                        {t.category}
+                                                    </span>
+                                                )}
                                             </div>
                                             <div className="flex items-center gap-2">
                                                 {!isStaff && t.status === 'resolved' && t.requester?.id === auth.user.id && (
@@ -1070,21 +1087,21 @@ export default function TicketsIndex(props: Props) {
                                                         <div className="text-base font-semibold leading-snug text-blue-800 hover:underline">
                                                             {t.title}
                                                         </div>
-                                                        {t.category && (
-                                                            <span className={`rounded px-3 py-1.5 text-xs font-semibold text-white ${
-                                                                t.category === 'IT'
-                                                                    ? 'bg-blue-500'
-                                                                    : 'bg-amber-500'
-                                                            }`}>
-                                                                {t.category}
-                                                            </span>
-                                                        )}
                                                         {t.type && (
                                                             <span className={`border rounded px-3 py-1.5 text-xs font-semibold ${typePillClass(t.type)}`}>
                                                                 {t.type}
                                                             </span>
                                                         )}
                                                     </div>
+                                                    {t.tags && t.tags.length > 0 && (
+                                                        <div className="mt-2 flex flex-wrap gap-1.5">
+                                                            {t.tags.map((tag) => (
+                                                                <span key={tag} className="rounded-full bg-teal-50 px-2.5 py-1 text-xs font-semibold text-teal-700">
+                                                                    {tag}
+                                                                </span>
+                                                            ))}
+                                                        </div>
+                                                    )}
                                                     <div className="mt-1 text-sm font-semibold text-rose-600">
                                                         {ticketSubtitle(t.status)}
                                                     </div>

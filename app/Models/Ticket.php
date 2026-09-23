@@ -19,6 +19,7 @@ class Ticket extends Model
         'description',
         'category',
         'type',
+        'tags',
         'attachments',
         'status',
         'priority',
@@ -31,6 +32,7 @@ class Ticket extends Model
     protected $casts = [
         'closed_at' => 'datetime',
         'attachments' => 'array',
+        'tags' => 'array',
         'resolved_at' => 'datetime',
     ];
 

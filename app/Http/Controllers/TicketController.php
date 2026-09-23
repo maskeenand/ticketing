@@ -128,6 +128,7 @@ class TicketController extends Controller
                 'assignee' => $ticket->assignee ? ['id' => $ticket->assignee->id, 'name' => $ticket->assignee->name] : null,
                 'category' => $ticket->category,
                 'type' => $ticket->type,
+                'tags' => $ticket->tags ?? [],
                 'last_replied_by' => $ticket->latestComment?->user?->name,
                 'last_replied_at' => $ticket->latestComment?->created_at?->toISOString(),
                 'feedback_rating' => $ticket->feedback_rating,
@@ -293,6 +294,7 @@ class TicketController extends Controller
                         'description' => $validated['description'] ?? null,
                         'category' => $validated['category'],
                         'type' => $validated['type'] ?? null,
+                        'tags' => null,
                         'attachments' => null,
                         'status' => 'open',
                         'priority' => $validated['priority'] ?? 'medium',
@@ -627,6 +629,30 @@ class TicketController extends Controller
         return back()->with('success', "Feedback untuk {$ticket->code} tersimpan.");
     }
 
+    public function updateTags(Request $request, Ticket $ticket)
+    {
+        $user = $request->user();
+        $staffTeam = $this->getStaffTeam($user);
+
+        if ($user === null || ($user->role !== 'admin' && $user->role !== 'supervisor' && ! $staffTeam)) {
+            abort(403);
+        }
+
+        if ($staffTeam && $ticket->category !== $staffTeam) {
+            abort(403);
+        }
+
+        $validated = $request->validate([
+            'tags' => ['nullable', 'string', 'max:500'],
+        ]);
+
+        $ticket->update([
+            'tags' => $this->normalizeTags($validated['tags'] ?? ''),
+        ]);
+
+        return back()->with('success', "Tag tiket {$ticket->code} berhasil diperbarui.");
+    }
+
     public function destroy(Request $request, Ticket $ticket)
     {
         $user = $request->user();
@@ -684,6 +710,7 @@ class TicketController extends Controller
                 'status' => $ticket->status,
                 'priority' => $ticket->priority,
                 'category' => $ticket->category,
+                'tags' => $ticket->tags ?? [],
                 'created_at' => $ticket->created_at?->toISOString(),
                 'project' => $ticket->project ? ['id' => $ticket->project->id, 'name' => $ticket->project->name] : null,
                 'requester' => $ticket->requester ? ['id' => $ticket->requester->id, 'name' => $ticket->requester->name] : null,
@@ -708,6 +735,16 @@ class TicketController extends Controller
     private function canDeleteTicket(User $user, Ticket $ticket): bool
     {
         return (int) $ticket->creator_id === (int) $user->id && $ticket->assignee_id === null;
+    }
+
+    private function normalizeTags(array|string $tags): array
+    {
+        return collect(is_array($tags) ? $tags : explode(',', $tags))
+            ->map(fn (string $tag) => '#' . ltrim(trim($tag), '#'))
+            ->filter(fn (string $tag) => $tag !== '#')
+            ->unique(fn (string $tag) => mb_strtolower($tag))
+            ->values()
+            ->all();
     }
 
     public function downloadAttachment(Request $request, Ticket $ticket, int $index)
