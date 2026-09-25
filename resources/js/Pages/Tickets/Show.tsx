@@ -127,6 +127,21 @@ function formatDateLabel(dateIso: string): string {
   return date.toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' });
 }
 
+function decodeHtmlEntities(value: string): string {
+  const normalized = String(value)
+    .replace(/&amp;nbsp;/gi, ' ')
+    .replace(/&nbsp;/gi, ' ')
+    .replace(/&#160;/gi, ' ')
+    .replace(/&#xA0;/gi, ' ')
+    .replace(/&amp;#160;/gi, ' ')
+    .replace(/&amp;#xA0;/gi, ' ')
+    .replace(/\u00A0/g, ' ');
+
+  const container = document.createElement('div');
+  container.innerHTML = normalized;
+  return container.innerHTML;
+}
+
 export default function TicketShow({ ticket, comments, canEdit, canDelete, canDeleteAttachment, availableAssignees }: Props) {
   const { auth } = usePage<PageProps>().props;
   const { data, setData, post, patch, processing, reset } = useForm({
@@ -466,7 +481,9 @@ export default function TicketShow({ ticket, comments, canEdit, canDelete, canDe
           <div className="px-6 py-5">
             <div
               className="text-sm text-slate-700"
-              dangerouslySetInnerHTML={{ __html: ticket.description ?? '<p>Tidak ada deskripsi.</p>' }}
+              dangerouslySetInnerHTML={{
+                __html: decodeHtmlEntities(ticket.description ?? '<p>Tidak ada deskripsi.</p>'),
+              }}
             />
             {ticket.assignee && (
               <div className="mt-4">
@@ -595,7 +612,7 @@ export default function TicketShow({ ticket, comments, canEdit, canDelete, canDe
                   </div>
                   <div
                     className="mt-2 text-sm text-slate-800 [&_p]:my-1 [&_ul]:list-disc [&_ul]:pl-5 [&_ol]:list-decimal [&_ol]:pl-5"
-                    dangerouslySetInnerHTML={{ __html: c.body }}
+                    dangerouslySetInnerHTML={{ __html: decodeHtmlEntities(c.body) }}
                   />
                   {normalizeAttachments(c.attachments).length > 0 && (
                     <div className="mt-3 space-y-2 border-t border-slate-200/80 pt-3">

@@ -158,9 +158,20 @@ function typePillClass(type: string | null | undefined) {
     return 'border-slate-300 text-slate-600 bg-slate-50';
 }
 
+function normalizeHtmlText(value: string) {
+    return value
+        .replace(/&amp;nbsp;/gi, ' ')
+        .replace(/&nbsp;/gi, ' ')
+        .replace(/&#160;/gi, ' ')
+        .replace(/&#xA0;/gi, ' ')
+        .replace(/&amp;#160;/gi, ' ')
+        .replace(/&amp;#xA0;/gi, ' ')
+        .replace(/\u00A0/g, ' ');
+}
+
 function textPreview(value: string, maxLength: number) {
     // Strip HTML tags before displaying as plain text
-    const stripped = value.replace(/<[^>]*>/g, ' ');
+    const stripped = normalizeHtmlText(value).replace(/<[^>]*>/g, ' ');
     const normalized = stripped.replace(/\s+/g, ' ').trim();
     if (normalized.length <= maxLength) return normalized;
     return normalized.slice(0, Math.max(0, maxLength - 1)).trimEnd() + '…';
@@ -477,6 +488,7 @@ export default function TicketsIndex(props: Props) {
                                         <option value="">All</option>
                                         <option value="IT">IT</option>
                                         <option value="IPSRS">IPSRS</option>
+                                        <option value="MARKOM">MARKOM</option>
                                     </select>
                                 </div>
 

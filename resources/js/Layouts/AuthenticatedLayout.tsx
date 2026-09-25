@@ -70,19 +70,19 @@ export default function Authenticated({
     const viewModeParam = urlParams.get('view_mode');
     
     // Default to 'personal' if no view_mode is set, unless the user is an admin/staff where default is 'client'
-    const isClientDefault = user.role === 'admin' || user.role === 'it' || user.role === 'ipsrs' || user.role === 'supervisor' || Boolean(user.team);
+const isClientDefault = user.role === 'admin' || user.role === 'it' || user.role === 'ipsrs' || user.role === 'markom' || user.role === 'supervisor' || Boolean(user.team);
     const currentViewMode = viewModeParam || (isClientDefault ? 'client' : 'personal');
-    
+
     const myTicketsActive = isTicketsRoute && currentViewMode === 'personal';
     const ticketClientActive = isTicketsRoute && currentViewMode === 'client';
-    
+
     const ticketsMenuParentActive = myTicketsActive || route().current('tickets.create');
     const canManageUsers = user.role === 'admin' || user.role === 'supervisor';
     const isAdmin = user.role === 'admin';
     const showTicketMenu = true; // semua user bisa create ticket
     const isSupervisor = user.role === 'supervisor';
-    // Staf = semua yang punya akses "client mode" (admin, it, ipsrs, team IT/IPSRS, supervisor)
-    const isStaffRole = user.role === 'admin' || user.role === 'it' || user.role === 'ipsrs' || user.role === 'supervisor' || Boolean(user.team);
+    // Staf = semua yang punya akses "client mode" (admin, it, ipsrs, markom, team IT/IPSRS/MARKOM, supervisor)
+    const isStaffRole = user.role === 'admin' || user.role === 'it' || user.role === 'ipsrs' || user.role === 'markom' || user.role === 'supervisor' || Boolean(user.team);
 
     const sidebarWidthClass = sidebarCollapsed ? 'w-20' : 'w-72';
 

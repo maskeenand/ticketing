@@ -32,7 +32,7 @@ class StoreTicketRequest extends FormRequest
                 : ['nullable', 'integer', 'exists:projects,id'],
             'priority' => ['nullable', 'in:low,medium,high'],
             'description' => ['nullable', 'string'],
-            'category' => ['required', 'in:IT,IPSRS'],
+            'category' => ['required', 'in:IT,IPSRS,MARKOM'],
             'type' => ['nullable', 'string', 'max:100'],
             'attachments' => ['nullable', 'array', 'max:10'],
             'attachments.*' => [

@@ -83,6 +83,7 @@ class UserManagementController extends Controller
     {
         if ($user->role === 'it' || $user->team === 'IT' || ($user->unit && ($user->unit->code === 'IT' || $user->unit->code === 'TI'))) return 'IT';
         if ($user->role === 'ipsrs' || $user->team === 'IPSRS' || ($user->unit && $user->unit->code === 'IPSRS')) return 'IPSRS';
+        if ($user->role === 'markom' || $user->team === 'MARKOM' || ($user->unit && $user->unit->code === 'MARKOM')) return 'MARKOM';
         return $user->team;
     }
 
@@ -140,7 +141,7 @@ class UserManagementController extends Controller
             'employee_id' => ['nullable', 'string', 'max:50', 'unique:users,employee_id'],
             'email' => ['nullable', 'string', 'lowercase', 'email', 'max:255', 'unique:users,email'],
             'unit_id' => ['required', 'integer', 'exists:projects,id'],
-            'role' => ['required', 'in:member,admin,it,ipsrs,supervisor'],
+            'role' => ['required', 'in:member,admin,it,ipsrs,markom,supervisor'],
             'supervisor_id' => ['nullable', 'integer', 'exists:users,id'],
             'password' => ['nullable', 'string', 'min:6', 'confirmed'],
         ]);
@@ -151,6 +152,7 @@ class UserManagementController extends Controller
             $allowedRoles = ['member'];
             if ($team === 'IT') $allowedRoles[] = 'it';
             if ($team === 'IPSRS') $allowedRoles[] = 'ipsrs';
+            if ($team === 'MARKOM') $allowedRoles[] = 'markom';
 
             if (!in_array($validated['role'], $allowedRoles)) {
                 abort(403);
@@ -165,6 +167,8 @@ class UserManagementController extends Controller
             $team = 'IT';
         } elseif ($role === 'ipsrs') {
             $team = 'IPSRS';
+        } elseif ($role === 'markom') {
+            $team = 'MARKOM';
         }
 
         $hasCustomPassword = !empty($validated['password']);
@@ -294,7 +298,7 @@ class UserManagementController extends Controller
         // Add unit_id and role only for admin
         if ($isAdminUnit) {
             $validationRules['unit_id'] = ['required', 'integer', 'exists:projects,id'];
-            $validationRules['role'] = ['required', 'in:member,admin,it,ipsrs,supervisor'];
+            $validationRules['role'] = ['required', 'in:member,admin,it,ipsrs,markom,supervisor'];
             $validationRules['supervisor_id'] = ['nullable', 'integer', 'exists:users,id'];
         }
 
@@ -315,6 +319,8 @@ class UserManagementController extends Controller
                 $team = 'IT';
             } elseif ($role === 'ipsrs') {
                 $team = 'IPSRS';
+            } elseif ($role === 'markom') {
+                $team = 'MARKOM';
             }
             $updates['unit_id'] = (int)$validated['unit_id'];
             $updates['role'] = $role;

@@ -68,6 +68,7 @@ export default function UsersCreate({
                 { value: 'member', label: 'Member' },
                 { value: 'it', label: 'IT' },
                 { value: 'ipsrs', label: 'IPSRS' },
+                { value: 'markom', label: 'MARKOM' },
             ].filter((opt) => opt.value === 'member' || opt.value === team);
         }
         return [
@@ -75,6 +76,7 @@ export default function UsersCreate({
             { value: 'admin', label: 'Admin' },
             { value: 'it', label: 'IT' },
             { value: 'ipsrs', label: 'IPSRS' },
+            { value: 'markom', label: 'MARKOM' },
             { value: 'supervisor', label: 'Supervisor' },
         ];
     };

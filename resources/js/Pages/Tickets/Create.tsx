@@ -131,6 +131,7 @@ export default function TicketsCreate({ projects }: Props) {
                                         <option value="">-- Pilih Unit Tujuan --</option>
                                         <option value="IT">IT</option>
                                         <option value="IPSRS">IPSRS</option>
+                                        <option value="MARKOM">MARKOM</option>
                                     </select>
                                     <InputError message={errors.category} className="mt-2" />
                                 </div>

@@ -35,7 +35,7 @@ class TicketController extends Controller
         $tab = in_array($tabParam, ['list', 'chart', 'overview'], true) ? $tabParam : 'list';
 
         $categoryParam = $request->string('category')->toString();
-        $categoryFilter = in_array($categoryParam, ['IT', 'IPSRS'], true) ? $categoryParam : null;
+        $categoryFilter = in_array($categoryParam, ['IT', 'IPSRS', 'MARKOM'], true) ? $categoryParam : null;
 
         $viewMode = $request->string('view_mode')->toString();
         $filters = [
@@ -291,7 +291,7 @@ class TicketController extends Controller
                         'creator_id' => $user->id,
                         'assignee_id' => null,
                         'title' => $validated['title'],
-                        'description' => $validated['description'] ?? null,
+                        'description' => $this->normalizeHtmlContent($validated['description'] ?? null),
                         'category' => $validated['category'],
                         'type' => $validated['type'] ?? null,
                         'tags' => null,
@@ -682,6 +682,8 @@ class TicketController extends Controller
             $q->with('user:id,name')->orderBy('created_at');
         }]);
 
+        $ticket->description = $this->normalizeHtmlContent($ticket->description);
+
         $staffTeam = $this->getStaffTeam($user);
         $isSupervisor = $user->role === 'supervisor';
         $canEdit = $staffTeam || $user->role === 'admin' || $isSupervisor;
@@ -993,13 +995,25 @@ class TicketController extends Controller
         $clean = preg_replace('/\sstyle\s*=\s*(\"[^\"]*\"|\'[^\']*\')/i', '', $clean) ?? $clean;
         $clean = preg_replace('/\shref\s*=\s*(\"javascript:[^\"]*\"|\'javascript:[^\']*\')/i', '', $clean) ?? $clean;
 
-        return $clean;
+        return html_entity_decode($clean, ENT_QUOTES | ENT_HTML5, 'UTF-8');
+    }
+
+    private function normalizeHtmlContent(?string $value): ?string
+    {
+        if ($value === null || $value === '') {
+            return $value;
+        }
+
+        $decoded = html_entity_decode($value, ENT_QUOTES | ENT_HTML5, 'UTF-8');
+        $decoded = str_replace(['&nbsp;', '&#160;', '&#xA0;', '&amp;nbsp;', '&amp;#160;', '&amp;#xA0;'], ' ', $decoded);
+
+        return preg_replace('/\x{00A0}/u', ' ', $decoded) ?? $decoded;
     }
 
     public function export(Request $request)
     {
         $categoryParam = $request->string('category')->toString();
-        $categoryFilter = in_array($categoryParam, ['IT', 'IPSRS'], true) ? $categoryParam : null;
+        $categoryFilter = in_array($categoryParam, ['IT', 'IPSRS', 'MARKOM'], true) ? $categoryParam : null;
 
         $filters = [
             'status' => $request->string('status')->toString() ?: null,
@@ -1157,6 +1171,12 @@ class TicketController extends Controller
                       ->orWhere(fn ($s) => $s->where('role', 'supervisor')
                           ->where(fn ($t) => $t->where('team', 'IPSRS')
                               ->orWhereHas('unit', fn ($u) => $u->where('name', 'IPSRS'))));
+                } elseif ($category === 'MARKOM') {
+                    $q->where('role', 'markom')
+                      ->orWhere('team', 'MARKOM')
+                      ->orWhere(fn ($s) => $s->where('role', 'supervisor')
+                          ->where(fn ($t) => $t->where('team', 'MARKOM')
+                              ->orWhereHas('unit', fn ($u) => $u->where('name', 'MARKOM'))));
                 }
             })
             ->orderBy('name')
@@ -1168,6 +1188,7 @@ class TicketController extends Controller
         $prefix = match ($category) {
             'IT' => 'IT',
             'IPSRS' => 'IPS',
+            'MARKOM' => 'MK',
             default => 'IPS',
         };
 
@@ -1210,11 +1231,15 @@ class TicketController extends Controller
             return 'IPSRS';
         }
 
+        if ($user->role === 'markom') {
+            return 'MARKOM';
+        }
+
         if ($user->role === 'supervisor') {
-            if (in_array($user->team, ['IT', 'IPSRS'], true)) {
+            if (in_array($user->team, ['IT', 'IPSRS', 'MARKOM'], true)) {
                 return $user->team;
             }
-            // Fallback: check unit name (e.g. supervisor with unit_id pointing to IT/IPSRS project)
+            // Fallback: check unit name (e.g. supervisor with unit_id pointing to IT/IPSRS/MARKOM project)
             if ($user->unit_id) {
                 $unitName = \App\Models\Project::find($user->unit_id)?->name;
                 if ($unitName === 'IT') {
@@ -1223,11 +1248,14 @@ class TicketController extends Controller
                 if ($unitName === 'IPSRS') {
                     return 'IPSRS';
                 }
+                if ($unitName === 'MARKOM') {
+                    return 'MARKOM';
+                }
             }
             return null;
         }
 
-        if (in_array($user->team, ['IT', 'IPSRS'], true)) {
+        if (in_array($user->team, ['IT', 'IPSRS', 'MARKOM'], true)) {
             return $user->team;
         }
 

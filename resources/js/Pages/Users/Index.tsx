@@ -46,6 +46,7 @@ function roleLabel(role?: string | null) {
     if (role === 'admin') return 'Admin';
     if (role === 'it') return 'IT';
     if (role === 'ipsrs') return 'IPSRS';
+    if (role === 'markom') return 'MARKOM';
     if (role === 'supervisor') return 'Supervisor';
     return 'Member';
 }
