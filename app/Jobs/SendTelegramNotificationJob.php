@@ -49,7 +49,7 @@ class SendTelegramNotificationJob implements ShouldQueue
         if ($this->ticket === null) {
             return sprintf(
                 "<b>Test Telegram</b>\nPesan ini dikirim untuk memastikan notifikasi Telegram Anda berfungsi.\nWaktu: %s",
-                now()->translatedFormat('d F Y, H:i')
+                now('Asia/Jakarta')->translatedFormat('d F Y, H:i')
             );
         }
 
@@ -73,7 +73,7 @@ class SendTelegramNotificationJob implements ShouldQueue
             $escape($this->ticket->status ?? 'unknown'),
             $escape($eventLabel),
             $escape(url('/tickets/' . $this->ticket->id)),
-            now()->translatedFormat('d F Y, H:i')
+            now('Asia/Jakarta')->translatedFormat('d F Y, H:i')
         );
     }
 }

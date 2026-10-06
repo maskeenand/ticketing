@@ -253,6 +253,7 @@ Route::middleware('auth')->group(function () {
 
     Route::get('/tickets', [TicketController::class, 'index'])->name('tickets.index');
     Route::get('/tickets/create', [TicketController::class, 'create'])->name('tickets.create');
+    Route::get('/tickets/export', [TicketController::class, 'export'])->name('tickets.export');
     Route::post('/tickets', [TicketController::class, 'store'])->name('tickets.store');
     Route::get('/tickets/{ticket}', [TicketController::class, 'show'])->name('tickets.show');
     Route::get('/tickets/{ticket}/attachments/{index}', [TicketController::class, 'downloadAttachment'])
@@ -271,7 +272,6 @@ Route::middleware('auth')->group(function () {
     Route::patch('/tickets/{ticket}/tags', [TicketController::class, 'updateTags'])->name('tickets.tags');
     Route::post('/tickets/{ticket}/feedback', [TicketController::class, 'feedback'])->name('tickets.feedback');
     Route::delete('/tickets/{ticket}', [TicketController::class, 'destroy'])->name('tickets.destroy');
-    Route::get('/tickets/export', [TicketController::class, 'export'])->name('tickets.export');
 
     // Web Push Subscriptions
     Route::get('/push/vapid-key', [\App\Http\Controllers\PushSubscriptionController::class, 'vapidKey'])->name('push.vapid-key');
