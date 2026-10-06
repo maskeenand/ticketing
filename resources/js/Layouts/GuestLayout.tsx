@@ -19,8 +19,8 @@ export default function Guest({ children }: PropsWithChildren) {
                     <div className="w-full max-w-[560px]">
                         <div className="mb-8 flex justify-center">
                             <div className="flex items-center gap-3">
-                                <div className="flex h-12 w-12 items-center justify-center rounded-full border border-teal-400/70 bg-white/10 backdrop-blur-sm">
-                                    <ApplicationLogo variant="icon" className="h-8 w-8" />
+                                <div className="flex h-16 w-16 shrink-0 items-center justify-center rounded-full border border-teal-400/70 bg-white/10 backdrop-blur-sm">
+                                    <ApplicationLogo variant="icon" className="h-14 w-14" />
                                 </div>
                                 <div className="text-center leading-none text-teal-200">
                                     <div className="text-[10px] font-bold tracking-[0.28em]">

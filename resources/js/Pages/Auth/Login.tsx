@@ -5,7 +5,7 @@ import PrimaryButton from '@/Components/PrimaryButton';
 import TextInput from '@/Components/TextInput';
 import GuestLayout from '@/Layouts/GuestLayout';
 import { Head, Link, useForm } from '@inertiajs/react';
-import { FormEventHandler } from 'react';
+import { FormEventHandler, useState } from 'react';
 
 export default function Login({
     status,
@@ -14,6 +14,7 @@ export default function Login({
     status?: string;
     canResetPassword: boolean;
 }) {
+    const [showPassword, setShowPassword] = useState(false);
     const { data, setData, post, processing, errors, reset } = useForm({
         username: '',
         password: '',
@@ -73,16 +74,40 @@ export default function Login({
                     <div>
                         <InputLabel htmlFor="password" value="Password" className="text-sm font-medium text-slate-700" />
 
-                        <TextInput
-                            id="password"
-                            type="password"
-                            name="password"
-                            value={data.password}
-                            className="mt-1 block w-full rounded-xl border-slate-300 bg-slate-50 px-4 py-3 text-base text-slate-800 shadow-sm focus:border-teal-500 focus:ring-teal-500"
-                            autoComplete="current-password"
-                            placeholder="Masukkan password"
-                            onChange={(e) => setData('password', e.target.value)}
-                        />
+                        <div className="relative mt-1">
+                            <TextInput
+                                id="password"
+                                type={showPassword ? 'text' : 'password'}
+                                name="password"
+                                value={data.password}
+                                className="block w-full rounded-xl border-slate-300 bg-slate-50 px-4 py-3 pr-12 text-base text-slate-800 shadow-sm focus:border-teal-500 focus:ring-teal-500"
+                                autoComplete="current-password"
+                                placeholder="Masukkan password"
+                                onChange={(e) => setData('password', e.target.value)}
+                            />
+                            <button
+                                type="button"
+                                onClick={() => setShowPassword((visible) => !visible)}
+                                className="absolute inset-y-0 right-0 inline-flex w-12 items-center justify-center rounded-r-xl text-slate-500 transition hover:text-teal-700 focus:outline-none focus:ring-2 focus:ring-inset focus:ring-teal-500"
+                                aria-label={showPassword ? 'Sembunyikan password' : 'Tampilkan password'}
+                                aria-pressed={showPassword}
+                                title={showPassword ? 'Sembunyikan password' : 'Tampilkan password'}
+                            >
+                                {showPassword ? (
+                                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" className="h-5 w-5" aria-hidden="true">
+                                        <path d="M3 3l18 18" />
+                                        <path d="M10.6 10.6a2 2 0 002.8 2.8" />
+                                        <path d="M9.9 5.2A10.8 10.8 0 0112 5c5 0 8.5 4.5 9.5 7-.4 1-1.3 2.2-2.5 3.3" />
+                                        <path d="M6.2 6.2C4.2 7.5 2.9 9.5 2.5 12c.8 2.3 4.4 7 9.5 7 1.3 0 2.5-.3 3.5-.8" />
+                                    </svg>
+                                ) : (
+                                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" className="h-5 w-5" aria-hidden="true">
+                                        <path d="M2.5 12s3.5-7 9.5-7 9.5 7 9.5 7-3.5 7-9.5 7-9.5-7-9.5-7z" />
+                                        <circle cx="12" cy="12" r="3" />
+                                    </svg>
+                                )}
+                            </button>
+                        </div>
 
                         <InputError message={errors.password} className="mt-2" />
                     </div>

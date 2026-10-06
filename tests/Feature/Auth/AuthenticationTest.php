@@ -4,6 +4,8 @@ namespace Tests\Feature\Auth;
 
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Session\TokenMismatchException;
+use Illuminate\Support\Facades\Route;
 use Tests\TestCase;
 
 class AuthenticationTest extends TestCase
@@ -15,6 +17,17 @@ class AuthenticationTest extends TestCase
         $response = $this->get('/login');
 
         $response->assertStatus(200);
+    }
+
+    public function test_expired_session_redirects_to_login_instead_of_showing_419(): void
+    {
+        Route::get('/test-expired-session', function () {
+            throw new TokenMismatchException();
+        });
+
+        $this->get('/test-expired-session')
+            ->assertRedirect(route('login'))
+            ->assertSessionHas('status', 'Sesi Anda telah berakhir. Silakan masuk kembali.');
     }
 
     public function test_users_can_authenticate_using_the_login_screen(): void
