@@ -60,16 +60,20 @@ class SendTelegramNotificationJob implements ShouldQueue
             ENT_QUOTES | ENT_SUBSTITUTE,
             'UTF-8'
         );
+        $eventLabel = $this->eventType === 'ticket_status_updated' && $this->ticket->status === 'closed'
+            ? 'Tiket ditutup'
+            : $this->eventType;
 
         return sprintf(
-            "<b>Tiket #%s</b>\nJudul Tiket: %s\nUnit Pengirim: <b>%s</b>\nUser Pengirim: <b>%s</b>\nStatus: %s\nEvent: %s\nLink: %s",
+            "<b>Tiket #%s</b>\nJudul Tiket: %s\nUnit Pengirim: <b>%s</b>\nUser Pengirim: <b>%s</b>\nStatus: %s\nEvent: %s\nLink: %s\nWaktu: %s",
             $this->ticket->id,
             $escape($this->ticket->title),
             $escape($this->ticket->project?->name ?? $this->ticket->category),
             $escape($this->ticket->requester?->name ?? $this->ticket->creator?->name),
             $escape($this->ticket->status ?? 'unknown'),
-            $escape($this->eventType),
-            $escape(url('/tickets/' . $this->ticket->id))
+            $escape($eventLabel),
+            $escape(url('/tickets/' . $this->ticket->id)),
+            now()->translatedFormat('d F Y, H:i')
         );
     }
 }

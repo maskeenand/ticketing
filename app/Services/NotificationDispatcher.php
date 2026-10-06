@@ -11,7 +11,10 @@ class NotificationDispatcher
 {
     public function dispatch(Ticket $ticket, string $eventType): void
     {
-        $recipients = collect($this->resolveRecipients($ticket));
+        $ticketRecipients = collect($this->resolveRecipients($ticket));
+        $recipients = $ticketRecipients;
+        $isTicketClosed = $eventType === 'ticket_status_updated' && $ticket->status === 'closed';
+        $connectedAdminRecipients = collect();
 
         if ($eventType === 'ticket_created') {
             $recipients = $recipients->merge(
@@ -21,16 +24,23 @@ class NotificationDispatcher
                     ->where('telegram_chat_id', '<>', '')
                     ->get()
             );
+        } elseif ($isTicketClosed) {
+            $connectedAdminRecipients = User::query()
+                ->where('role', 'admin')
+                ->whereNotNull('telegram_chat_id')
+                ->where('telegram_chat_id', '<>', '')
+                ->get();
         }
 
-        foreach ($recipients->unique('id') as $user) {
+        foreach ($recipients->merge($connectedAdminRecipients)->unique('id') as $user) {
             $preferences = $user->notificationPreference;
 
-            if ($this->shouldSendEmail($preferences, $eventType)) {
+            $isTicketRecipient = $ticketRecipients->contains('id', $user->id);
+            if ((! $isTicketClosed || $isTicketRecipient) && $this->shouldSendEmail($preferences, $eventType)) {
                 SendEmailNotificationJob::dispatch($user, $ticket, $eventType);
             }
 
-            $isConnectedAdminTicketAlert = $eventType === 'ticket_created'
+            $isConnectedAdminTicketAlert = ($eventType === 'ticket_created' || $isTicketClosed)
                 && $user->role === 'admin'
                 && ! empty($user->telegram_chat_id);
 
