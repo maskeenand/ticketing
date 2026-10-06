@@ -3,8 +3,10 @@
 namespace App\Http\Controllers;
 
 use App\Http\Requests\ProfileUpdateRequest;
+use App\Models\NotificationLog;
 use App\Jobs\SendTelegramNotificationJob;
 use Illuminate\Contracts\Auth\MustVerifyEmail;
+use Illuminate\Http\Client\ConnectionException;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -107,13 +109,40 @@ class ProfileController extends Controller
             ]);
         }
 
-        SendTelegramNotificationJob::dispatchSync(
-            $user,
-            'telegram_test',
-            null,
-        );
+        $lastTestLogId = NotificationLog::query()
+            ->where('event_type', 'telegram_test')
+            ->where('user_id', $user->id)
+            ->max('id') ?? 0;
 
-        return Redirect::route('profile.edit')->with('status', 'telegram-test-sent');
+        try {
+            SendTelegramNotificationJob::dispatchSync(
+                $user,
+                'telegram_test',
+                null,
+            );
+        } catch (ConnectionException) {
+            NotificationLog::create([
+                'event_type' => 'telegram_test',
+                'user_id' => $user->id,
+                'channel' => 'telegram',
+                'status' => 'failed',
+                'message' => 'Telegram connection failed',
+            ]);
+
+            return Redirect::route('profile.edit')->with('status', 'telegram-test-failed');
+        }
+
+        $testLog = NotificationLog::query()
+            ->where('event_type', 'telegram_test')
+            ->where('user_id', $user->id)
+            ->where('id', '>', $lastTestLogId)
+            ->latest('id')
+            ->first();
+
+        return Redirect::route('profile.edit')->with(
+            'status',
+            $testLog?->status === 'sent' ? 'telegram-test-sent' : 'telegram-test-failed'
+        );
     }
 
     /**

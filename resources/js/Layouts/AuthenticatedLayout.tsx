@@ -325,6 +325,26 @@ const isClientDefault = user.role === 'admin' || user.role === 'it' || user.role
                                 </Link>
                             )}
 
+                            {isAdmin && (
+                                <Link
+                                    href={route('telegram-logs.index')}
+                                    className={
+                                        'flex items-center gap-3 rounded-2xl px-3 py-3 text-sm font-semibold transition-all duration-300 ' +
+                                        (route().current('telegram-logs.*')
+                                            ? 'bg-gradient-to-r from-teal-50 to-cyan-50 text-teal-700 shadow-md'
+                                            : 'text-slate-600 hover:bg-slate-50 hover:text-slate-900')
+                                    }
+                                >
+                                    <SidebarIcon active={route().current('telegram-logs.*')}>
+                                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="h-6 w-6">
+                                            <path d="m22 2-7 20-4-9-9-4Z" />
+                                            <path d="M22 2 11 13" />
+                                        </svg>
+                                    </SidebarIcon>
+                                    {!sidebarCollapsed && <span className="truncate">Telegram Log</span>}
+                                </Link>
+                            )}
+
                             {canManageUsers && (
                                 <div>
                                     <div className={`flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-semibold transition-all duration-200 ${route().current('reports.*') ? 'bg-gradient-to-r from-teal-500 to-cyan-600 text-white shadow-lg' : 'text-slate-600 hover:bg-slate-100'}`}>

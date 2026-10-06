@@ -11,17 +11,33 @@ class NotificationDispatcher
 {
     public function dispatch(Ticket $ticket, string $eventType): void
     {
-        $recipients = $this->resolveRecipients($ticket);
+        $recipients = collect($this->resolveRecipients($ticket));
 
-        foreach ($recipients as $user) {
+        if ($eventType === 'ticket_created') {
+            $recipients = $recipients->merge(
+                User::query()
+                    ->where('role', 'admin')
+                    ->whereNotNull('telegram_chat_id')
+                    ->where('telegram_chat_id', '<>', '')
+                    ->get()
+            );
+        }
+
+        foreach ($recipients->unique('id') as $user) {
             $preferences = $user->notificationPreference;
 
             if ($this->shouldSendEmail($preferences, $eventType)) {
                 SendEmailNotificationJob::dispatch($user, $ticket, $eventType);
             }
 
-            if ($this->shouldSendTelegram($preferences, $eventType) && !empty($user->telegram_chat_id)) {
-                SendTelegramNotificationJob::dispatch($user, $eventType, $ticket);
+            $isConnectedAdminTicketAlert = $eventType === 'ticket_created'
+                && $user->role === 'admin'
+                && ! empty($user->telegram_chat_id);
+
+            if (($isConnectedAdminTicketAlert || $this->shouldSendTelegram($preferences, $eventType))
+                && ! empty($user->telegram_chat_id)) {
+                SendTelegramNotificationJob::dispatch($user, $eventType, $ticket)
+                    ->onQueue('telegram');
             }
         }
     }

@@ -282,6 +282,7 @@ Route::middleware('auth')->group(function () {
     Route::get('/email-logs', [\App\Http\Controllers\EmailLogController::class, 'index'])->name('email-logs.index');
     Route::post('/email-logs/{emailLog}/retry', [\App\Http\Controllers\EmailLogController::class, 'retry'])->name('email-logs.retry');
     Route::post('/email-logs/retry-all', [\App\Http\Controllers\EmailLogController::class, 'retryAll'])->name('email-logs.retry-all');
+    Route::get('/telegram-logs', [\App\Http\Controllers\TelegramLogController::class, 'index'])->name('telegram-logs.index');
 
     Route::get('/notifications/{notification}', function (Request $request, string $notification) {
         $user = $request->user();

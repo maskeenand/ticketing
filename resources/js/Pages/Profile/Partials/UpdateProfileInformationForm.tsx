@@ -256,12 +256,12 @@ export default function UpdateProfileInformation({
                         <h3 className="text-lg font-semibold text-slate-900">Telegram Notification</h3>
                         <p className="text-sm text-slate-600">
                             {user.telegram_chat_id
-                                ? 'Akun Telegram Anda sudah terhubung.'
+                                ? 'Chat ID Telegram Anda sudah tersimpan.'
                                 : 'Hubungkan Telegram untuk menerima notifikasi tiket.'}
                         </p>
                     </div>
                     <span className={`inline-flex rounded-full px-2.5 py-1 text-xs font-semibold ${user.telegram_chat_id ? 'bg-green-100 text-green-700' : 'bg-yellow-100 text-yellow-700'}`}>
-                        {user.telegram_chat_id ? 'Terhubung' : 'Belum terhubung'}
+                        {user.telegram_chat_id ? 'ID tersimpan' : 'Belum terhubung'}
                     </span>
                 </div>
 
@@ -283,15 +283,18 @@ export default function UpdateProfileInformation({
                     </div>
 
                     <div>
-                        <InputLabel htmlFor="telegram_username" value="Username Telegram" />
+                        <InputLabel htmlFor="telegram_username" value="Username akun Telegram" />
                         <TextInput
                             id="telegram_username"
                             type="text"
                             value={data.telegram_username}
                             onChange={(e) => setData('telegram_username', e.target.value)}
                             className="mt-1 block w-full"
-                            placeholder="Contoh: @nama_user"
+                            placeholder="Contoh: @username_anda"
                         />
+                        <p className="mt-1 text-xs text-slate-500">
+                            Isi username akun penerima, bukan username bot. Pengiriman tetap menggunakan Chat ID.
+                        </p>
                     </div>
 
                     <div className="flex flex-wrap items-center gap-3">
@@ -313,11 +316,17 @@ export default function UpdateProfileInformation({
                     </div>
 
                     {status === 'telegram-connected' && (
-                        <p className="text-sm font-medium text-green-600">Telegram berhasil disimpan.</p>
+                        <p className="text-sm font-medium text-green-600">Pengaturan Telegram berhasil disimpan.</p>
                     )}
 
                     {status === 'telegram-test-sent' && (
-                        <p className="text-sm font-medium text-green-600">Pesan test Telegram sedang dikirim.</p>
+                        <p className="text-sm font-medium text-green-600">Pesan test berhasil dikirim ke Telegram.</p>
+                    )}
+
+                    {status === 'telegram-test-failed' && (
+                        <p className="text-sm font-medium text-red-600">
+                            Pesan test gagal dikirim. Periksa Chat ID, koneksi bot, dan token bot.
+                        </p>
                     )}
                 </div>
             </div>

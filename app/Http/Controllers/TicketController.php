@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Http\Requests\StoreTicketRequest;
 use App\Events\TicketAssigned;
 use App\Events\TicketCommented as TicketCommentedEvent;
+use App\Events\TicketCreated as TicketCreatedEvent;
 use App\Events\TicketResolved;
 use App\Events\TicketStatusUpdated;
 use App\Models\Project;
@@ -388,7 +389,7 @@ class TicketController extends Controller
         if ($recipientIds->isNotEmpty()) {
             $recipients = User::query()->whereIn('id', $recipientIds)->get();
 
-            event(new TicketCreated($ticket, $user));
+            event(new TicketCreatedEvent($ticket, $user));
 
             dispatch(function () use ($recipients, $ticket, $user) {
                 foreach ($recipients as $recipient) {

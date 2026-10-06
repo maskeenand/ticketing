@@ -28,7 +28,7 @@ class SendTelegramNotificationJob implements ShouldQueue
             return;
         }
 
-        $response = Http::post('https://api.telegram.org/bot' . env('TELEGRAM_BOT_TOKEN') . '/sendMessage', [
+        $response = Http::post('https://api.telegram.org/bot' . config('services.telegram.bot_token') . '/sendMessage', [
             'chat_id' => $this->user->telegram_chat_id,
             'text' => $this->buildMessage(),
             'parse_mode' => 'HTML',
@@ -53,13 +53,23 @@ class SendTelegramNotificationJob implements ShouldQueue
             );
         }
 
+        $this->ticket->loadMissing(['project', 'requester', 'creator']);
+
+        $escape = static fn (?string $value): string => htmlspecialchars(
+            $value ?? '-',
+            ENT_QUOTES | ENT_SUBSTITUTE,
+            'UTF-8'
+        );
+
         return sprintf(
-            "<b>Ticket #%s</b>\nJudul: %s\nStatus: %s\nEvent: %s\nLink: %s",
+            "<b>Tiket #%s</b>\nJudul Tiket: %s\nUnit Pengirim: <b>%s</b>\nUser Pengirim: <b>%s</b>\nStatus: %s\nEvent: %s\nLink: %s",
             $this->ticket->id,
-            $this->ticket->subject ?? 'Ticket',
-            $this->ticket->status ?? 'unknown',
-            $this->eventType,
-            url('/tickets/' . $this->ticket->id)
+            $escape($this->ticket->title),
+            $escape($this->ticket->project?->name ?? $this->ticket->category),
+            $escape($this->ticket->requester?->name ?? $this->ticket->creator?->name),
+            $escape($this->ticket->status ?? 'unknown'),
+            $escape($this->eventType),
+            $escape(url('/tickets/' . $this->ticket->id))
         );
     }
 }
