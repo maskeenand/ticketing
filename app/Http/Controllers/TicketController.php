@@ -1283,8 +1283,8 @@ class TicketController extends Controller
             $createdBySameUnit = User::query()
                 ->where('unit_id', $user->unit_id)
                 ->where(function ($query) use ($ticket) {
-                    $query->whereKey($ticket->requester_id)
-                        ->orWhereKey($ticket->creator_id);
+                    $query->where('id', $ticket->requester_id)
+                        ->orWhere('id', $ticket->creator_id);
                 })
                 ->exists();
 
