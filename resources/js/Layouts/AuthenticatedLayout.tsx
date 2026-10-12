@@ -47,9 +47,10 @@ export default function Authenticated({
                 const ticketCode = (data.ticket_code as string | undefined) ?? '';
                 const ticketTitle = (data.ticket_title as string | undefined) ?? '';
                 const actorName = (data.actor_name as string | undefined) ?? 'Seseorang';
-                const message = ticketCode 
+                const notificationMessage = (data.message as string | undefined) ?? '';
+                const message = notificationMessage || (ticketCode
                     ? `Tiket baru masuk: ${ticketCode} - ${ticketTitle} dari ${actorName}`
-                    : `Notifikasi baru dari ${actorName}`;
+                    : `Notifikasi baru dari ${actorName}`);
                 setToastMessage(message);
                 setShowToast(true);
                 

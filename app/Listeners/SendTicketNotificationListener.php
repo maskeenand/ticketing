@@ -13,6 +13,6 @@ class SendTicketNotificationListener
 
     public function handle(TicketNotificationEvent $event): void
     {
-        $this->dispatcher->dispatch($event->ticket, $event->eventType);
+        $this->dispatcher->dispatch($event->ticket, $event->eventType, $event->actor);
     }
 }

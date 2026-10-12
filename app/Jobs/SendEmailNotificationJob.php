@@ -21,6 +21,7 @@ class SendEmailNotificationJob implements ShouldQueue
         public User $user,
         public Ticket $ticket,
         public string $eventType,
+        public ?User $actor = null,
     ) {}
 
     public function handle(): void
@@ -30,7 +31,7 @@ class SendEmailNotificationJob implements ShouldQueue
         }
 
         Mail::to($this->user->email)->send(
-            new TicketNotificationMail($this->ticket, $this->eventType)
+            new TicketNotificationMail($this->ticket, $this->eventType, $this->actor)
         );
 
         NotificationLog::create([

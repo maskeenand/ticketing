@@ -3,6 +3,10 @@
 
 Event: {{ $eventType }}
 
+@if($eventType === 'ticket_assigned' && $actor)
+Di-assign oleh: {{ $actor->name }}
+@endif
+
 Ticket #{{ $ticket->id }}
 Judul: {{ $ticket->subject ?? $ticket->title ?? 'Ticket' }}
 Status: {{ $ticket->status }}

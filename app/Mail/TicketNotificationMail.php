@@ -14,6 +14,7 @@ class TicketNotificationMail extends Mailable
     public function __construct(
         public Ticket $ticket,
         public string $eventType,
+        public ?\App\Models\User $actor = null,
     ) {}
 
     public function build(): self
@@ -22,6 +23,7 @@ class TicketNotificationMail extends Mailable
             ->markdown('emails.ticket-notification', [
                 'ticket' => $this->ticket,
                 'eventType' => $this->eventType,
+                'actor' => $this->actor,
             ]);
     }
 }

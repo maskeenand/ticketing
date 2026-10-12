@@ -6,10 +6,12 @@ use App\Jobs\SendEmailNotificationJob;
 use App\Jobs\SendTelegramNotificationJob;
 use App\Models\Ticket;
 use App\Models\User;
+use App\Notifications\TicketAssignedInApp;
+use Illuminate\Support\Facades\Notification;
 
 class NotificationDispatcher
 {
-    public function dispatch(Ticket $ticket, string $eventType): void
+    public function dispatch(Ticket $ticket, string $eventType, ?User $actor = null): void
     {
         $ticketRecipients = collect($this->resolveRecipients($ticket));
         $recipients = $ticketRecipients;
@@ -39,11 +41,23 @@ class NotificationDispatcher
                 ->get();
         }
 
-        foreach ($recipients->merge($adminRecipients)->unique('id') as $user) {
+        $allRecipients = $recipients->merge($adminRecipients)->unique('id');
+
+        if ($eventType === 'ticket_assigned') {
+            $inAppRecipients = $allRecipients
+                ->reject(fn (User $user) => $actor !== null && (int) $user->id === (int) $actor->id)
+                ->values();
+
+            if ($inAppRecipients->isNotEmpty()) {
+                Notification::send($inAppRecipients, new TicketAssignedInApp($ticket, $actor));
+            }
+        }
+
+        foreach ($allRecipients as $user) {
             $preferences = $user->notificationPreference;
 
             if ($this->shouldSendEmail($preferences, $eventType)) {
-                SendEmailNotificationJob::dispatch($user, $ticket, $eventType);
+                SendEmailNotificationJob::dispatch($user, $ticket, $eventType, $actor);
             }
 
             $isConnectedAdminTicketAlert = ($eventType === 'ticket_created' || $isTicketClosed)
@@ -52,7 +66,7 @@ class NotificationDispatcher
 
             if (($isConnectedAdminTicketAlert || $this->shouldSendTelegram($preferences, $eventType))
                 && ! empty($user->telegram_chat_id)) {
-                SendTelegramNotificationJob::dispatch($user, $eventType, $ticket)
+                SendTelegramNotificationJob::dispatch($user, $eventType, $ticket, $actor)
                     ->onQueue('telegram');
             }
         }

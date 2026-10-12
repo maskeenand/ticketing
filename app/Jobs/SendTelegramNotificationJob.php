@@ -20,6 +20,7 @@ class SendTelegramNotificationJob implements ShouldQueue
         public User $user,
         public string $eventType = 'telegram_test',
         public ?Ticket $ticket = null,
+        public ?User $actor = null,
     ) {}
 
     public function handle(): void
@@ -53,7 +54,7 @@ class SendTelegramNotificationJob implements ShouldQueue
             );
         }
 
-        $this->ticket->loadMissing(['project', 'requester', 'creator']);
+        $this->ticket->loadMissing(['project', 'requester', 'creator', 'assignee']);
 
         $escape = static fn (?string $value): string => htmlspecialchars(
             $value ?? '-',
@@ -64,14 +65,21 @@ class SendTelegramNotificationJob implements ShouldQueue
             ? 'Tiket ditutup'
             : $this->eventType;
 
+        $actorLine = '';
+        if ($this->eventType === 'ticket_assigned' && $this->actor) {
+            $actorLine = sprintf("\nDi-assign oleh: <b>%s</b>", $escape($this->actor->name));
+        }
+
         return sprintf(
-            "<b>Tiket #%s</b>\nJudul Tiket: %s\nUnit Pengirim: <b>%s</b>\nUser Pengirim: <b>%s</b>\nStatus: %s\nEvent: %s\nLink: %s\nWaktu: %s",
+            "<b>Tiket #%s</b>\nJudul Tiket: %s\nUnit Pengirim: <b>%s</b>\nUser Pengirim: <b>%s</b>\nAssign: <b>%s</b>\nStatus: %s\nEvent: %s%s\nLink: %s\nWaktu: %s",
             $this->ticket->id,
             $escape($this->ticket->title),
             $escape($this->ticket->project?->name ?? $this->ticket->category),
             $escape($this->ticket->requester?->name ?? $this->ticket->creator?->name),
+            $escape($this->ticket->assignee?->name),
             $escape($this->ticket->status ?? 'unknown'),
             $escape($eventLabel),
+            $actorLine,
             $escape(url('/tickets/' . $this->ticket->id)),
             now('Asia/Jakarta')->translatedFormat('d F Y, H:i')
         );
